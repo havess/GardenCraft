@@ -167,7 +167,16 @@ function init(){
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
 	camera.position.set(2,2,2);
 
-	camControls = new THREE.FirstPersonControls(camera);
+	camControls = new THREE.TrackballControls( camera );
+	camControls.rotateSpeed = 1.0;
+	camControls.zoomSpeed = 1.2;
+	camControls.panSpeed = 0.8;
+	camControls.noZoom = false;
+	camControls.noPan = false;
+	camControls.staticMoving = true;
+	camControls.dynamicDampingFactor = 0.3;
+
+	/*camControls = new THREE.FirstPersonControls(camera);
     camControls.lookSpeed = 0.4;
     camControls.movementSpeed = 20;
     camControls.noFly = true;
@@ -176,7 +185,7 @@ function init(){
     camControls.verticalMin = 1.0;
     camControls.verticalMax = 2.0;
     camControls.lon = -150;
-    camControls.lat = 120;
+    camControls.lat = 120;*/
 
 
 	//RENDERER
@@ -253,23 +262,15 @@ function onDocumentKeyDown(event){
 }
 
 function onDocumentMouseDown(event){
-
+	//window.addEventListener( 'resize', onWindowResize, false );
 }
 
-function onDocumentMouseMove(event){
-	mouse.x = event.clientX;
-	mouse.y = event.clientY;
-}
-
-function onWindowResize(event){
-
-}
 
 function render() {
 	grid.applyToScene(scene);
 
 	var delta = clock.getDelta();
-	camControls.update(delta);
+	camControls.update();
 	renderer.clear();
 	requestAnimationFrame(render);
 	renderer.render(scene, camera);
