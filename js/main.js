@@ -246,7 +246,7 @@ function init(){
 	document.addEventListener( 'keydown', onDocumentKeyDown, false );
 	document.addEventListener( 'keyup', onDocumentKeyUp, false );*/
 
-	window.addEventListener( 'resize', onWindowResize, false );
+	//window.addEventListener( 'resize', onWindowResize, false );
 
 	grid.applyToScene(scene);
 }
