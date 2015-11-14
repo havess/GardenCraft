@@ -1,3 +1,90 @@
+var getBlockString = function(x, y, z){
+	if (y==='undefined'){
+		return [x,y,z].join("|");
+	}
+	else{
+		return [v.x,v.y,v.z].join("|");		
+	}
+}
+
+var createGrid3 = function(x, y, z, defaultvalue){
+	//creates a 3d grid and stuff. initializes everything to null by default
+	defaultvalue = (defaultvalue==='undefined' ? null : defaultvalue);
+	ret=[];
+	for (i=0; i<this._x; i++){
+		ret.push([]);
+		for (j=0; j<this._y; j++){
+			ret[i].push([defaultvalue]*this._z);
+		}
+	}
+	return ret;
+}
+
+var Grid = function(bottom, x, y, z){
+	this._x=x;
+	this._y=y;
+	this._z=z;
+	this.g=createGrid3(x, y, z, null);
+}
+
+Grid.prototype.constructor = Grid;
+
+Grid.prototype.get = function(x, y, z){
+	//callable as get(x,y,z) or get(vector)
+	if(y!=='undefined'){ //first case
+		return this.g[x][y][z];
+	}
+	else{ //vector case is assumed if only one argument is passed
+		return this.g[x.x][x.y][x.z];
+	}
+}
+
+Grid.prototype.diff = function(grid2){
+	if ((this._x!=grid2._x)||(this._y!=grid2._y)||(this._x!=grid2._z)){
+		console.log("GridDelta called with grids that are not the same size.");
+	}
+	// Returns a list of (x,y,z) triplets where this and grid2 differ
+	ret=[];
+	for (i=0; i<this._x; i++){
+		for (j=0; j<this._y; j++){
+			for (k=0; k<this._z; k++){
+				if ((this.get(i,j,k))!=(grid2.get(i,j,k))){
+					ret.push((i,j,k));
+				}
+			}
+		}
+	}
+	return ret;
+}
+
+Grid.prototype.apply = function(scene){
+	//
+	var diff;
+	var oldColor;
+	var newColor;
+	if (scene.oldGrid==='undefined'){
+		scene.oldGrid=createGrid3(this.x, this.y, this.z);
+	}
+	diff = this.diff(scene.oldGrid);
+	for (i=0; i<diff.length; i++){
+		oldColor = apply(scene.oldGrid.get, diff[i]);
+		newColor = apply(this.get, diff[i]);
+		//three cases
+		if (oldColor==newColor){ //do nothing
+			pass;
+		}
+		else if (oldColor==='null'){
+			var cube = new THREE.Mesh( new THREE.CubeGeometry( 1, 1, 1 ), new THREE.MeshNormalMaterial() );
+			apply(cube.position.set, diff[i]);
+			cube.name=getBlockString(diff[i]);
+			scene.addObject(cube);
+		}
+		else if (newColor==='null'){
+			scene.removeObject(getBlockString(diff[i]));
+		}
+	}
+}
+
 var container, scene, camera, renderer;
 var planeGeo, cubeGeo;
 var plane, cube;
