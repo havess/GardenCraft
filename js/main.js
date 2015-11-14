@@ -77,22 +77,25 @@ Grid.prototype.apply = function(scene){
 	for (i=0; i<diff.length; i++){
 		oldColor = apply(scene.oldGrid.get, diff[i]);
 		newColor = apply(this.get, diff[i]);
-		//three cases
+		//four cases - do nothing, create new cube, delete cube, change color of cube
 		if (oldColor==newColor){ //do nothing
 			pass;
 		}
 		else if (oldColor==='null'){
 			var cube = new THREE.Mesh( new THREE.CubeGeometry( 1, 1, 1 ), new THREE.MeshNormalMaterial() );
 			apply(cube.position.set, diff[i]);
+			cube.material.color.setHex(this.get(diff[i]));
 			cube.name=getBlockString(diff[i]);
 			scene.addObject(cube);
 		}
 		else if (newColor==='null'){
 			scene.removeObject(getBlockString(diff[i]));
 		}
+		else{
+			cube.material.color.setHex(this.get(diff[i]));
+		}
 	}
 }
-
 
 function init(){
 	container = document.createElement('div');
@@ -136,7 +139,8 @@ function init(){
 	planeGeo = new THREE.PlaneBufferGeometry(1000,1000);
 	planeGeo.rotateX( - Math.PI / 2 );
 
-	cubeGeo = new THREE.BoxGeometry(100,100,100);
+	//
+	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
 	//MESHES
 	plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({visible: false}));
