@@ -3,6 +3,7 @@ var container, scene, camera, camControls, renderer, controls;
 var clock;
 var planeGeo, cubeGeo;
 var plane, cube;
+var worlds = [];
 var ray_caster, mouse;
 
 var objects = [];
@@ -19,10 +20,10 @@ var getBlockString = function(x, y, z){
 var createGrid3 = function(x, y, z, defaultvalue){
 	//creates a 3d grid and stuff. initializes everything to null by default
 	defaultvalue = (defaultvalue==='undefined' ? null : defaultvalue);
-	ret=[];
-	for (i=0; i<this._x; i++){
+	ret = [];
+	for (i = 0; i < this._x; i++){
 		ret.push([]);
-		for (j=0; j<this._y; j++){
+		for (j = 0; j < this._y; j++){
 			ret[i].push([defaultvalue]*this._z);
 		}
 	}
@@ -30,10 +31,10 @@ var createGrid3 = function(x, y, z, defaultvalue){
 }
 
 var Grid = function(bottom, x, y, z){
-	this._x=x;
-	this._y=y;
-	this._z=z;
-	this.g=createGrid3(x, y, z, null);
+	this._x = x;
+	this._y = y;
+	this._z = z;
+	this.g = createGrid3(x, y, z, null);
 }
 
 Grid.prototype.constructor = Grid;
@@ -71,25 +72,25 @@ Grid.prototype.apply = function(scene){
 	var diff;
 	var oldColor;
 	var newColor;
-	if (scene.oldGrid==='undefined'){
-		scene.oldGrid=createGrid3(this.x, this.y, this.z);
+	if (scene.oldGrid === 'undefined'){
+		scene.oldGrid = createGrid3(this.x, this.y, this.z);
 	}
 	diff = this.diff(scene.oldGrid);
-	for (i=0; i<diff.length; i++){
+	for (i=0; i < diff.length; i++){
 		oldColor = apply(scene.oldGrid.get, diff[i]);
 		newColor = apply(this.get, diff[i]);
 		//four cases - do nothing, create new cube, delete cube, change color of cube
-		if (oldColor==newColor){ //do nothing
+		if (oldColor === newColor){ //do nothing
 			pass;
 		}
-		else if (oldColor==='null'){
+		else if (oldColor === 'null'){
 			var cube = new THREE.Mesh( new THREE.CubeGeometry( 1, 1, 1 ), new THREE.MeshNormalMaterial() );
 			apply(cube.position.set, diff[i]);
 			cube.material.color.setHex(this.get(diff[i]));
-			cube.name=getBlockString(diff[i]);
+			cube.name = getBlockString(diff[i]);
 			scene.addObject(cube);
 		}
-		else if (newColor==='null'){
+		else if (newColor === 'null'){
 			scene.removeObject(getBlockString(diff[i]));
 		}
 		else{
@@ -114,13 +115,13 @@ function init(){
 	ray_caster = new THREE.Raycaster();
 
 	//CAMERA
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
 	camera.position.set(2,2,2);
 
 	camControls = new THREE.TrackballControls( camera );
-	camControls.rotateSpeed = 1.0;
-	camControls.zoomSpeed = 1.2;
-	camControls.panSpeed = 0.8;
+	camControls.rotateSpeed = 2.0;
+	camControls.zoomSpeed = 1.5;
+	camControls.panSpeed = 1.0;
 	camControls.noZoom = false;
 	camControls.noPan = false;
 	camControls.staticMoving = true;
@@ -170,7 +171,7 @@ function init(){
 
 	}
 
-	var material = new THREE.LineBasicMaterial( { color: 0x000000, opacity: 0.2, transparent: true } );
+	var material = new THREE.LineBasicMaterial( { color: 0x000000, opacity: 1, transparent: true } );
 
 	var line = new THREE.LineSegments( geometry, material );
 	scene.add( line );
@@ -185,22 +186,65 @@ function init(){
 
 	var directionalLight = new THREE.DirectionalLight( 0xffffff );
 	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
-	scene.add( directionalLight );
+	//scene.add( directionalLight );
 	
 
 	//MATERIALS
 	material = new THREE.MeshBasicMaterial( { color: 0x00ff00 });
 
-	/*document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-	document.addEventListener( 'keydown', onDocumentKeyDown, false );
-	document.addEventListener( 'keyup', onDocumentKeyUp, false );*/
 
-	//window.addEventListener( 'resize', onWindowResize, false );
+	document.addEventListener( 'keydown', onKeyDown, false );
+	window.addEventListener( 'resize', onWindowResize, false );
 
 }
 
+function generateWorld(){
+	world = new THREE.Mesh(cubeGeo, new THREE.MeshBasicMaterial());
+	worlds.push(world);
+	updateWorldPos();
+	scene.add(world);
 
+}
+
+function updateWorldPos(){
+	var distFromO = (worlds.length-1)/2; 
+	var axis = new THREE.Vector3(0,1,0); //z axis
+	var posVector = new THREE.Vector3(distFromO,0,0);
+	var angle = (2*Math.PI)/worlds.length;
+	worlds[0].position.set(posVector.x, posVector.y, posVector.z);
+	console.log("ANGLE" + angle);
+	for(var i = 0; i < worlds.length; i++){
+		worlds[i].position.set(posVector.x, posVector.y, posVector.z);
+		console.log("updating position" + worlds.length);
+		posVector.applyAxisAngle(axis, angle);
+	}
+}
+
+function reset(){
+	camera.position.set(2,2,2);
+}
+
+function onKeyDown(event){
+	event.preventDefault();
+	switch(event.keyCode){
+		case 32:
+			console.log("space bar pressed");
+			reset();
+			break;
+		case 78:
+			console.log("new world created");
+			generateWorld();
+			break;
+	}
+}
+
+function onWindowResize() {
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+}
 
 function render() {
 	var delta = clock.getDelta();
