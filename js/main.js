@@ -2,7 +2,7 @@ var container, scene, camera, camControls, renderer, controls;
 var clock;
 var planeGeo, cubeGeo;
 var plane, cube;
-var ray_caster, mouse;
+var raycaster, mouse;
 
 var objects = [];
 
@@ -11,7 +11,7 @@ var deepcopyArray = function(array){
 }
 
 var getBlockString = function(x, y, z){
-	if (y==='undefined'){
+	if (y===undefined){
 		return [x,y,z].join("|");
 	}
 	else{
@@ -19,14 +19,21 @@ var getBlockString = function(x, y, z){
 	}
 }
 
+var getBlockName = function(id, x, y, z){
+	return id+'|'+getBlockString(x, y, z);
+}
+
 var createGrid3 = function(x, y, z, defaultvalue){
 	//creates a 3d grid and stuff. initializes everything to null by default
-	defaultvalue = (defaultvalue==='undefined' ? null : defaultvalue);
-	ret=[];
-	for (i=0; i<this._x; i++){
+	defaultvalue = (defaultvalue===undefined ? null : defaultvalue);
+	ret = new Array();
+	for (i=0; i<x; i++){
 		ret.push([]);
-		for (j=0; j<this._y; j++){
-			ret[i].push([defaultvalue]*this._z);
+		for (j=0; j<y; j++){
+			ret[i].push([]);
+			for (k=0; k<z; k++){
+				ret[i][j][k] = defaultvalue;
+			}
 		}
 	}
 	return ret;
@@ -34,42 +41,53 @@ var createGrid3 = function(x, y, z, defaultvalue){
 
 var Grid = function(position, x, y, z){
 	this.position = position;
-	this._x=x;
-	this._y=y;
-	this._z=z;
-	this.g=createGrid3(x, y, z, null);
+	this.id = Math.random();
+	this.x = x;
+	this.y = y;
+	this.z = z;
+	this.g = createGrid3(x, y, z, null);
 }
 
 Grid.prototype.constructor = Grid;
 
 Grid.prototype.copy = function(){
 	//returns new Grid instance with a deep copy of all variables  
-	var tmp = new Grid(this.position, this._x, this._y, thiz._z);
-	tmp.g = deepcopyArray(this.g)
-	return tmp;
+	return $.extend(true, {}, this);
 }
 
 Grid.prototype.get = function(x, y, z){
 	//callable as get(x,y,z) or get(vector)
-	if(y!=='undefined'){ //first case
+	if(y!=undefined){ //first case
 		return this.g[x][y][z];
 	}
 	else{ //vector case is assumed if only one argument is passed
+		console.log("this.g is",this.g);
+		console.log("x is",x);
+		console.log();
 		return this.g[x.x][x.y][x.z];
 	}
 }
 
+Grid.prototype.set = function(x, y, z, val){
+	//callable as set(x,y,z,val) or set(vector, val)
+	if(val!=undefined){ //first case
+		this.g[x][y][z] = val;
+	}
+	else{ //vector case is assumed if only one argument is passed
+		this.g[x.x][x.y][x.z]=val;
+	}
+}
 Grid.prototype.diff = function(grid2){
-	if ((this._x!=grid2._x)||(this._y!=grid2._y)||(this._x!=grid2._z)){
+	if ((this.x!=grid2.x)||(this.y!=grid2.y)||(this.z!=grid2.z)){
 		console.log("GridDelta called with grids that are not the same size.");
 	}
 	// Returns a list of (x,y,z) triplets where this and grid2 differ
 	ret=[];
-	for (i=0; i<this._x; i++){
-		for (j=0; j<this._y; j++){
-			for (k=0; k<this._z; k++){
+	for (i=0; i<this.x; i++){
+		for (j=0; j<this.y; j++){
+			for (k=0; k<this.z; k++){
 				if ((this.get(i,j,k))!=(grid2.get(i,j,k))){
-					ret.push((i,j,k));
+					ret.push([i,j,k]);
 				}
 			}
 		}
@@ -77,39 +95,58 @@ Grid.prototype.diff = function(grid2){
 	return ret;
 }
 
-Grid.prototype.apply = function(scene){
+Grid.prototype.applyToScene = function(scene){
 	//
 	var diff;
 	var oldColor;
 	var newColor;
-	if (scene.oldGrid==='undefined'){
-		scene.oldGrid=createGrid3(this.x, this.y, this.z);
+
+	if (!scene.oldGrid){
+		scene.oldGrid = new Grid(this.position, this.x, this.y, this.z);
 	}
+
 	diff = this.diff(scene.oldGrid);
+	console.log("oldgrid", scene.oldGrid);
+	console.log("grid", this);
+	console.log("diff:", diff);
 	for (i=0; i<diff.length; i++){
-		oldColor = apply(scene.oldGrid.get, diff[i]);
-		newColor = apply(this.get, diff[i]);
+		oldColor = Grid.prototype.get.apply(scene.oldGrid, diff[i]);
+		newColor = Grid.prototype.get.apply(this, diff[i]);
 		//four cases - do nothing, create new cube, delete cube, change color of cube
-		if (oldColor==newColor){ //do nothing
-			pass;
+		if (oldColor==newColor){ //don't need to do anything, but this should never trigger
+			console.log("Grid.diff is broken")
+		} 
+
+		else if (oldColor===null){
+			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshBasicMaterial() );
+			cube.position.set(diff[i][0], diff[i][1], diff[i][2]);
+			cube.position.add(this.position);
+			cube.material.color.setHex(this.get(diff[i][0], diff[i][1], diff[i][2]));
+			cube.name=getBlockName(this.id, diff[i]);
+			scene.add(cube);
 		}
-		else if (oldColor==='null'){
-			var cube = new THREE.Mesh( new THREE.CubeGeometry( 1, 1, 1 ), new THREE.MeshNormalMaterial() );
-			apply(cube.position.set, diff[i]);
-			cube.material.color.setHex(this.get(diff[i]));
-			cube.name=getBlockString(diff[i]);
-			scene.addObject(cube);
+
+		else if (newColor===null){
+			scene.removeObject(getBlockName(this.id, diff[i]));
 		}
-		else if (newColor==='null'){
-			scene.removeObject(getBlockString(diff[i]));
-		}
+
 		else{
-			cube.material.color.setHex(this.get(diff[i]));
+			cube = scene.getObjectByName( getBlockName(this.id, diff[i]) );
+			cube.material.color.setHex(this.get(diff[i][0], diff[i][1], diff[i][2]));
 		}
+	}
+
+	scene.oldGrid = this.copy()
+}
+
+var grid = new Grid(new THREE.Vector3(0,0,0), 2, 2, 2);
+for (i=0; i<2; i++){
+	for (j=0; j<2; j++){
+		grid.set(i, j, 0, 0xff3333);
+		grid.set(i, j, 1, 0x3366ff);
 	}
 }
 
-var grid = new Grid(20,20,20);
 
 function init(){
 	container = document.createElement('div');
@@ -124,7 +161,7 @@ function init(){
 	mouse = new THREE.Vector2();
 
 	//RAYCASTER
-	ray_caster = new THREE.Raycaster();
+	raycaster = new THREE.Raycaster();
 
 	//CAMERA
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
@@ -166,11 +203,11 @@ function init(){
 
 	for ( var i = - size; i <= size; i += step ) {
 
-		geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
-		geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
+		geometry.vertices.push( new THREE.Vector3( - size+0.5, -0.5, i+0.5 ) );
+		geometry.vertices.push( new THREE.Vector3(   size+0.5, -0.5, i+0.5 ) );
 
-		geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
-		geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
+		geometry.vertices.push( new THREE.Vector3( i+0.5, -0.5, - size+0.5 ) );
+		geometry.vertices.push( new THREE.Vector3( i+0.5, -0.5,   size+0.5 ) );
 
 	}
 
@@ -202,6 +239,7 @@ function init(){
 
 	window.addEventListener( 'resize', onWindowResize, false );
 
+	grid.applyToScene(scene);
 }
 
 function onDocumentKeyUp(event){
@@ -227,8 +265,9 @@ function onWindowResize(event){
 
 }
 
-
 function render() {
+	grid.applyToScene(scene);
+
 	var delta = clock.getDelta();
 	camControls.update(delta);
 	renderer.clear();
