@@ -1,7 +1,6 @@
 
 var container, scene, camera, camControls, renderer, controls;
 var clock;
-var container, scene, camera, renderer;
 var planeGeo, cubeGeo;
 var plane, cube;
 var ray_caster, mouse;
@@ -112,7 +111,7 @@ function init(){
 
 	//CAMERA
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.set(100,100,100);
+	camera.position.set(2,2,2);
 
 	controls = new THREE.TrackballControls( camera );
 	controls.rotateSpeed = 1.0;
@@ -152,7 +151,7 @@ function init(){
 	plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({visible: false}));
 	scene.add(plane);
 
-	var size = 500, step = 50;
+	var size = 20, step = 1;
 
 	var geometry = new THREE.Geometry();
 
