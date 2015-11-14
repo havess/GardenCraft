@@ -1,7 +1,11 @@
-<<<<<<< HEAD
 var container, scene, camera, camControls, renderer, controls;
-var clock
-=======
+var clock;
+var planeGeo, cubeGeo;
+var plane, cube;
+var ray_caster, mouse;
+
+var objects = [];
+
 var getBlockString = function(x, y, z){
 	if (y==='undefined'){
 		return [x,y,z].join("|");
@@ -89,13 +93,6 @@ Grid.prototype.apply = function(scene){
 	}
 }
 
-var container, scene, camera, renderer;
->>>>>>> 6d5b79b79cd32c70f012564448411bb5d2230188
-var planeGeo, cubeGeo;
-var plane, cube;
-var ray_caster, mouse;
-
-var objects = [];
 
 function init(){
 	container = document.createElement('div');
