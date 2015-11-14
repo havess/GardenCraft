@@ -1,7 +1,13 @@
-<<<<<<< HEAD
+
 var container, scene, camera, camControls, renderer, controls;
-var clock
-=======
+var clock;
+var container, scene, camera, renderer;
+var planeGeo, cubeGeo;
+var plane, cube;
+var ray_caster, mouse;
+
+var objects = [];
+
 var getBlockString = function(x, y, z){
 	if (y==='undefined'){
 		return [x,y,z].join("|");
@@ -89,14 +95,6 @@ Grid.prototype.apply = function(scene){
 	}
 }
 
-var container, scene, camera, renderer;
->>>>>>> 6d5b79b79cd32c70f012564448411bb5d2230188
-var planeGeo, cubeGeo;
-var plane, cube;
-var ray_caster, mouse;
-
-var objects = [];
-
 function init(){
 	container = document.createElement('div');
 	document.body.appendChild(container);
@@ -116,7 +114,16 @@ function init(){
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
 	camera.position.set(100,100,100);
 
-	camControls = new THREE.FirstPersonControls(camera);
+	controls = new THREE.TrackballControls( camera );
+	controls.rotateSpeed = 1.0;
+	controls.zoomSpeed = 1.2;
+	controls.panSpeed = 0.8;
+	controls.noZoom = false;
+	controls.noPan = false;
+	controls.staticMoving = true;
+	controls.dynamicDampingFactor = 0.3;
+
+	/*camControls = new THREE.FirstPersonControls(camera);
     camControls.lookSpeed = 0.4;
     camControls.movementSpeed = 20;
     camControls.noFly = true;
@@ -125,7 +132,7 @@ function init(){
     camControls.verticalMin = 1.0;
     camControls.verticalMax = 2.0;
     camControls.lon = -150;
-    camControls.lat = 120;
+    camControls.lat = 120;*/
 
 
 	//RENDERER
