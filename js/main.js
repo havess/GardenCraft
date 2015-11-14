@@ -1,4 +1,5 @@
-var container, scene, camera, renderer;
+var container, scene, camera, camControls, renderer, controls;
+var clock
 var planeGeo, cubeGeo;
 var plane, cube;
 var ray_caster, mouse;
@@ -12,14 +13,28 @@ function init(){
 	//SCENE
 	scene = new THREE.Scene();
 
+	clock = new THREE.Clock();
+
+	//MOUSE
+	mouse = new THREE.Vector2();
+
 	//RAYCASTER
 	ray_caster = new THREE.Raycaster();
 
 	//CAMERA
-	camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
-	camera.position.set( 100, 100, 100 );
-	//look at origin
-	camera.lookAt(new THREE.Vector3());
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+	camera.position.set(100,100,100);
+
+	camControls = new THREE.FirstPersonControls(camera);
+    camControls.lookSpeed = 0.4;
+    camControls.movementSpeed = 20;
+    camControls.noFly = true;
+    camControls.lookVertical = true;
+    camControls.constrainVertical = true;
+    camControls.verticalMin = 1.0;
+    camControls.verticalMax = 2.0;
+    camControls.lon = -150;
+    camControls.lat = 120;
 
 
 	//RENDERER
@@ -77,17 +92,45 @@ function init(){
 	/*document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 	document.addEventListener( 'keydown', onDocumentKeyDown, false );
-	document.addEventListener( 'keyup', onDocumentKeyUp, false );
+	document.addEventListener( 'keyup', onDocumentKeyUp, false );*/
 
-	window.addEventListener( 'resize', onWindowResize, false );*/
+	window.addEventListener( 'resize', onWindowResize, false );
+
+}
+
+function onDocumentKeyUp(event){
+
+}
+
+function onDocumentKeyDown(event){
+	//event.preventDefault();
+
+
+}
+
+function onDocumentMouseDown(event){
+
+}
+
+function onDocumentMouseMove(event){
+	mouse.x = event.clientX;
+	mouse.y = event.clientY;
+}
+
+function onWindowResize(event){
 
 }
 
 
 function render() {
+	var delta = clock.getDelta();
+	camControls.update(delta);
+	renderer.clear();
 	requestAnimationFrame(render);
 	renderer.render(scene, camera);
 };
+
+
 
 init();
 render();
