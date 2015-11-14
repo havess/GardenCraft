@@ -6,6 +6,10 @@ var ray_caster, mouse;
 
 var objects = [];
 
+var deepcopyArray = function(array){
+	return $.extend(true, [], array);
+}
+
 var getBlockString = function(x, y, z){
 	if (y==='undefined'){
 		return [x,y,z].join("|");
@@ -28,7 +32,8 @@ var createGrid3 = function(x, y, z, defaultvalue){
 	return ret;
 }
 
-var Grid = function(bottom, x, y, z){
+var Grid = function(position, x, y, z){
+	this.position = position;
 	this._x=x;
 	this._y=y;
 	this._z=z;
@@ -36,6 +41,13 @@ var Grid = function(bottom, x, y, z){
 }
 
 Grid.prototype.constructor = Grid;
+
+Grid.prototype.copy = function(){
+	//returns new Grid instance with a deep copy of all variables  
+	var tmp = new Grid(this.position, this._x, this._y, thiz._z);
+	tmp.g = deepcopyArray(this.g)
+	return tmp;
+}
 
 Grid.prototype.get = function(x, y, z){
 	//callable as get(x,y,z) or get(vector)
@@ -96,6 +108,8 @@ Grid.prototype.apply = function(scene){
 		}
 	}
 }
+
+var grid = new Grid(20,20,20);
 
 function init(){
 	container = document.createElement('div');
