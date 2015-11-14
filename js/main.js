@@ -117,14 +117,14 @@ function init(){
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
 	camera.position.set(2,2,2);
 
-	controls = new THREE.TrackballControls( camera );
-	controls.rotateSpeed = 1.0;
-	controls.zoomSpeed = 1.2;
-	controls.panSpeed = 0.8;
-	controls.noZoom = false;
-	controls.noPan = false;
-	controls.staticMoving = true;
-	controls.dynamicDampingFactor = 0.3;
+	camControls = new THREE.TrackballControls( camera );
+	camControls.rotateSpeed = 1.0;
+	camControls.zoomSpeed = 1.2;
+	camControls.panSpeed = 0.8;
+	camControls.noZoom = false;
+	camControls.noPan = false;
+	camControls.staticMoving = true;
+	camControls.dynamicDampingFactor = 0.3;
 
 	/*camControls = new THREE.FirstPersonControls(camera);
     camControls.lookSpeed = 0.4;
@@ -196,37 +196,15 @@ function init(){
 	document.addEventListener( 'keydown', onDocumentKeyDown, false );
 	document.addEventListener( 'keyup', onDocumentKeyUp, false );*/
 
-	window.addEventListener( 'resize', onWindowResize, false );
+	//window.addEventListener( 'resize', onWindowResize, false );
 
 }
 
-function onDocumentKeyUp(event){
-
-}
-
-function onDocumentKeyDown(event){
-	//event.preventDefault();
-
-
-}
-
-function onDocumentMouseDown(event){
-
-}
-
-function onDocumentMouseMove(event){
-	mouse.x = event.clientX;
-	mouse.y = event.clientY;
-}
-
-function onWindowResize(event){
-
-}
 
 
 function render() {
 	var delta = clock.getDelta();
-	camControls.update(delta);
+	camControls.update();
 	renderer.clear();
 	requestAnimationFrame(render);
 	renderer.render(scene, camera);
