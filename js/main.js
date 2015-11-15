@@ -249,7 +249,10 @@ function init(){
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
 	var geometry  = new THREE.SphereGeometry(90, 32, 32);
-	var material  = new THREE.MeshNormalMaterial();
+	
+	//var material  = new THREE.MeshNormalMaterial(); //rainbow mode
+	var material  = new THREE.MeshBasicMaterial({color: 0x000000});
+
 	material.side  = THREE.BackSide;
 	var mesh  = new THREE.Mesh(geometry, material);
 	scene.add(mesh);
