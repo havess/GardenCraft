@@ -391,7 +391,7 @@ function init(){
 	var geometry  = new THREE.SphereGeometry(10000, 32, 32);
 	
 	//var material  = new THREE.MeshNormalMaterial(); //rainbow mode
-	var material  = new THREE.MeshBasicMaterial({color: 0x000000});
+	var material  = new THREE.MeshBasicMaterial({color: 0xffffff});
 
 	material.side  = THREE.BackSide;
 	var mesh  = new THREE.Mesh(geometry, material);
