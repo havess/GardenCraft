@@ -25,7 +25,7 @@ $(".Menu-hidden").on('click', function(e){
 $("#Flowers li").on('click','a',  function(e){
     e.preventDefault();
     var type = $(this).html()
-    type = type.toLowerCase();
+    genType = type.toLowerCase();
     console.log(generators[type]);
 
 });
@@ -116,7 +116,7 @@ Grid.prototype.get = function(x, y, z){
 
 Grid.prototype.set = function(x, y, z, val){
 	//callable as set(x,y,z,val) or set(vector, val)
-	if(val!==undefined){ //first case
+	if(val !== undefined){ //first case
 		this.g[x][y][z] = val;
 	}
 	else{ //vector case is assumed if only one argument is passed
@@ -148,6 +148,7 @@ Grid.prototype.insertBlock = function(x, y, z, _color){
 	var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial({color: _color}) );
 	cube.position.set((this.x/2)-x-0.5, (this.y/2)-y-0.5, (this.z/2)-z-0.5);
 	cube.name = getBlockName(this.id, x, y, z);
+	cube.truePosition = [x, y, z];
 	this.group.add(cube);
 }
 
@@ -231,9 +232,9 @@ var FlowerPot = function(position, x, y, z){
 	var soilGeo = new THREE.BoxGeometry(1, 1, 1);
 	for (var i=0; i<this.x-2*allowance; i++){
 		for (var k=0; k<this.z-2*allowance; k++){
-			var j = 1;
 			var soil = new THREE.Mesh(soilGeo, new THREE.MeshLambertMaterial({color: soilcolor}));
 			soil.position.set(-(this.x-2*allowance)/2 + i + 0.5, -this.y/2 -0.5, -(this.z-2*allowance)/2 + k + 0.5);
+			soil.truePosition = [x-allowance-i-1, y-1, z-allowance-k-1];
 			this.group.add(soil);
 		}
 	}
@@ -321,6 +322,7 @@ Flora.prototype.growTo = function(x, y, z, color){
 		this.pot.set(x, y, z, color);
 		return 1;
 	}
+	console.log("requested but unavailable:", x, y, z);
 	return 0;
 }
 
@@ -453,8 +455,6 @@ var flowerGeneratorGenerator = function(_colorLiving, _colorPetals, _colorCenter
 	}
 }
 
-
-
 var roseGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xff3333, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
 var daffodilGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xf4f53d, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
 var anemoneGenerator = flowerGeneratorGenerator(0x267326, 0xf0e5ff, 0x6600ff, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1]], 6) //greenish=yellow, really light purple, purple
@@ -462,13 +462,15 @@ var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, 
 var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
 
 
+
 var generators = {"rose" : roseGenerator, "daffodil" : daffodilGenerator, "anemone" : anemoneGenerator, "carnation" : carnationGenerator, "stock" : stockGenerator};
+
 
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
-	pot.plant(daffodilGenerator, new THREE.Vector3(3, pot.y-1, 3));
-	pot.plant(stockGenerator, new THREE.Vector3(10, pot.y-1, 3));
-	pot.plant(carnationGenerator, new THREE.Vector3(3, pot.y-1, 10));
+	//pot.plant(daffodilGenerator, new THREE.Vector3(3, pot.y-1, 3));
+	//pot.plant(stockGenerator, new THREE.Vector3(10, pot.y-1, 3));
+	//pot.plant(carnationGenerator, new THREE.Vector3(3, pot.y-1, 10));
 	/*pot.mapfill( function(i, j, k){
 		if ((Math.random())<0.1){
 			return 0x33cc33;
@@ -483,7 +485,7 @@ function generatePot(){
 }
 
 function updatePotPos(){
-	var distFromO = 10*(pots.length-1)/2; 
+	var distFromO = 20*(pots.length-1)/2; 
 	var axis = new THREE.Vector3(0,1,0); //z axis
 	posVector = new THREE.Vector3(distFromO,7,0);
 	var angle = (2*Math.PI)/pots.length;
@@ -492,7 +494,6 @@ function updatePotPos(){
 		posVector.applyAxisAngle(axis, angle);
 	}
 }
-
 
 function reset(){
 
@@ -554,39 +555,63 @@ function onWindowResize() {
 }
 
 function onMouseClick(event){
-	//pots[0].remove(0);
-
-	event.preventDefault();
-	if(hover != null){
-		var obj =  hover[0].object.parent;
-		focusedPot = obj;
-		if(!focus){
-			reset();
-			focusPosition = obj.position;
-			camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
-			obj.position.set(0,7,0);
-			focusedPotID = obj.id;
-			console.log(obj.id);
-			focus = true;
-			$('.Menu-hidden').show();
-		}else if(obj.id != focusedPotID){
-			reset();
-			updatePotPos();
-			focusPosition = obj.position;
-			if(lastObj != null) lastObj.material.color.setHex(lastColor);
-			camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
-			obj.position.set(0,7,0);
-			focusedPotID = obj.id;
-			focus = true;
-			$('.Menu-hidden').show();
-		}else if(planting){
+	if (event.button === 0){
+		event.preventDefault();
+		if(hover != null){
+			var obj =  hover[0].object.parent;
+			focusedPot = obj;
+			if(!focus){
+				focusPosition = obj.position;
+				camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
+				obj.position.set(0,7,0);
+				focusedPotID = obj.id;
+				console.log("obj.id",obj.id);
+				$(".Menu-hidden").show();
+				focus = true;
+			}else if(obj.id != focusedPotID){
+				updatePotPos();
+				focusPosition = obj.position;
+				camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
+				obj.position.set(0,7,0);
+				focusedPotID = obj.id;
+				focus = true;
+			}else if(planting){
+				var voxel = hover[0].object;
+				console.log("focusedPot",focusedPot);
+				for(var i = 0; i < pots.length; i++){
+					console.log("obj.name", obj.name);
+					if(obj.name == pots[i].group.name){
+						console.log("PLANTING BITCH" + pots[i].group.name);
+						console.log("voxel name split", voxel.name, new THREE.Vector3(voxel.truePosition));
+						pots[i].plant(generators[genType], new THREE.Vector3(voxel.truePosition[0], voxel.truePosition[1]+1, voxel.truePosition[2]));
+						//pots[i].plant(anemoneGenerator, new THREE.Vector3(10, pots[i].y-1, 3));
+						console.log("flora.length", pots[i].flora.length);
+					}
+				}
+			}
+		}
+	}
+	else if (event.button === 1){
+		console.log("DIFFERENT MOUSE CLICK YOO 1");
+		if(hover != null){
 			var voxel = hover[0].object;
-			console.log(focusedPot);
-			for(var i = 0; i < pots.length; i++){
-				console.log(obj.name);
-				if(obj.name == pots[i].group.name){
-					console.log("PLANTING BITCH" + pots[i].group.name);
-					pots[i].plant(generators[genType], new THREE.Vector3(voxel.position.x, voxel.position.y - 1, voxel.position.z));
+			var obj = hover[0].object.parent;
+			if (!focus){
+				//delete the pot
+			}
+			else if (obj.id != focusedPotID){
+			}
+			else{
+				for (var i=0; i<pots.length; i++){
+					if (pots[i].group.name == obj.name){
+						for (var k=0; k<pots[i].flora.length; k++){
+							if (null !== pots[i].flora[k].get(voxel.truePosition[0], voxel.truePosition[1], voxel.truePosition[2])){
+								pots[i].remove(k);
+								hover = getIntersect();
+								return;
+							}
+						}	
+					}
 				}
 			}
 		}
@@ -597,6 +622,7 @@ function onMouseMove( event ) {
 
 	event.preventDefault();
 	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+	console.log("hover:",hover);
 	if(focus && hover != null && hover[0].object.parent.id == focusedPotID && hover[0].object.geometry.name == "soil"){
 		if(lastObj != null) lastObj.material.color.setHex(lastColor);
 		lastObj = hover[0].object;
