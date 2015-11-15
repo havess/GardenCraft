@@ -351,7 +351,7 @@ function init(){
 	raycaster = new THREE.Raycaster();
 
 
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000000 );
 	camera.position.set(15,15,15);
 
 	camControls = new THREE.TrackballControls( camera );
@@ -388,7 +388,7 @@ function init(){
 
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
-	var geometry  = new THREE.SphereGeometry(100000, 32, 32);
+	var geometry  = new THREE.SphereGeometry(10000, 32, 32);
 	
 	//var material  = new THREE.MeshNormalMaterial(); //rainbow mode
 	var material  = new THREE.MeshBasicMaterial({color: 0x000000});
