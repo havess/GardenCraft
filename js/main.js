@@ -26,7 +26,6 @@ $("#Flowers li").on('click','a',  function(e){
     e.preventDefault();
     var type = $(this).html()
     genType = type.toLowerCase();
-    console.log(generators[type]);
 
 });
 
@@ -642,8 +641,10 @@ function getIntersect(){
 	var intersects = [];
 
 	for(var i = 0; i < pots.length; i++){
-		intersects = intersects.concat(raycaster.intersectObjects(pots[i].group.children));
+		intersects = intersects.concat(pots[i].group.children);
 	}
+
+	intersects = raycaster.intersectObjects(intersects);
 
 	if(intersects.length > 0){
 		return intersects;
