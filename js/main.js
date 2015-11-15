@@ -1,12 +1,13 @@
 'use strict'
 
 
-var container, scene, camera, camControls, renderer, controls;
+var container, scene, camera, cameraPos0, cameraUp0, cameraZoom, camControls, renderer, controls;
 var clock;
 var planeGeo, cubeGeo, sphereGeo;
 var plane, cube, sphere;
+var iniQ, endQ, curQ, vec3, tweenValue;
 var worlds = [];
-var raycaster, mouse;
+var raycaster, mouse, hover = false;
 
 var objects = [];
 var grids = [];
@@ -212,7 +213,12 @@ function init(){
 
 	//CAMERA
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
-	camera.position.set(2,2,2);
+	camera.position.set(15,15,15);
+	console.log(camera.rotation);
+	console.log(camera.quaternion);
+	cameraPos0 = camera.position.clone()
+    cameraUp0 = camera.up.clone()
+    cameraZoom = camera.position.z
 
 	camControls = new THREE.TrackballControls( camera );
 	camControls.rotateSpeed = 10.0;
@@ -299,6 +305,7 @@ function init(){
 
 	document.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'mousemove', onMouseMove, false );
+	window.addEventListener( 'click', onMouseClick, false );
 	window.addEventListener( 'resize', onWindowResize, false );
 
 }
@@ -333,7 +340,22 @@ function updateWorldPos(){
 }
 
 function reset(){
-	camera.position.set(2,2,2);
+
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
+	camera.position.set(15,15,15);
+	console.log(camera.rotation);
+	console.log(camera.quaternion);
+
+	camControls = new THREE.TrackballControls( camera );
+	camControls.rotateSpeed = 10.0;
+	camControls.zoomSpeed = 1.2;
+	camControls.panSpeed = 0.8;
+	camControls.noZoom = false;
+	camControls.noPan = false;
+	camControls.staticMoving = true;
+	camControls.dynamicDampingFactor = 0.3;
+	
+
 }
 
 function onKeyDown(event){
@@ -353,8 +375,13 @@ function onKeyDown(event){
 			scene.remove(grid.group);
 			updateWorldPos();
 			break;
+		case 90:
+			console.log(camera.position);
+			camera.position.addScaledVector(camera.position, -0.5);
+			break;
 	}
 }
+
 
 function onWindowResize() {
 
@@ -364,11 +391,29 @@ function onWindowResize() {
 	render();
 }
 
-function onMouseMove( event ) {
+function onMouseClick(event){
 
 	event.preventDefault();
 
+	if(hover != null){
+		//reset();
+		var targetPos = hover[0].object.parent.position;
+		smoothAsFuck(targetPos, 5);
+		//camControls.target = targetPos;
+		//camera.position.set(0,4,0);
+		requestAnimationFrame(render);
+		//potZoom(targetPos, 100, 1000);
+		//tweenRotation(targetQ, 10);
+	}
+}
+
+function onMouseMove( event ) {
+
+	event.preventDefault();
 	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+}
+
+function getIntersect(){
 
 	raycaster.setFromCamera( mouse, camera );
 
@@ -379,21 +424,27 @@ function onMouseMove( event ) {
 	
 	}
 
-	for(var i = 0; i < intersects.length; i++) {
-		intersects[i].object.parent.rotation.y+=0.01;
+	if(intersects.length > 0){
+		intersects[0].object.parent.rotation.y += 0.05;
+		return intersects;
+	}else{
+		return null;
 	}
 }
 
 
 function render() {
-	for (var i=0; i<grids.length; i++){
+
+
+
+	hover = getIntersect();
+
+
+	for (var i=0; i < grids.length; i++){
 		grids[i].applyToScene(scene);
 	}
 
 	var delta = clock.getDelta();
-	for(var i = 0; i < worlds.length; i++){
-		posVector.applyAxisAngle(axis, angle);
-	}
 	camControls.update();
 	renderer.clear();
 	requestAnimationFrame(render);
