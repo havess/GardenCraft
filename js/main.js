@@ -188,7 +188,7 @@ Grid.prototype.applyToScene = function(scene){
 		}
 
 		else if (newColor===null){
-			scene.removeObject(getBlockName(this.id, diff[i]));
+			scene.remove(getBlockName(this.id, diff[i]));
 		}
 
 		else{
@@ -210,10 +210,15 @@ var FlowerPot = function(position, x, y, z){
 	var potcolor = 0x996633;
 	var soilcolor = 0x5f4020;
 
-	var soilGeo = new THREE.BoxGeometry(this.x-2*allowance, 1, this.z-2*allowance);
-	var soil = new THREE.Mesh(soilGeo, new THREE.MeshLambertMaterial({color: soilcolor}))
-	soil.position.set(0, -this.y/2 -0.5, 0);
-	this.group.add(soil);
+	var soilGeo = new THREE.BoxGeometry(1, 1, 1);
+	for (var i=0; i<this.x-2*allowance; i++){
+		for (var k=0; k<this.z-2*allowance; k++){
+			var j = 1;
+			var soil = new THREE.Mesh(soilGeo, new THREE.MeshLambertMaterial({color: soilcolor}));
+			soil.position.set(-(this.x-2*allowance)/2 + i + 0.5, -this.y/2 -0.5, -(this.z-2*allowance)/2 + k + 0.5);
+			this.group.add(soil);
+		}
+	}
 
 	var potGeo = new THREE.BoxGeometry(this.x-2*allowance, 1, this.z-2*allowance);
 	var potmesh = new THREE.Mesh(potGeo, new THREE.MeshLambertMaterial({color: potcolor}))
@@ -257,6 +262,21 @@ FlowerPot.prototype.update = function(dt){
 	for (var i=0; i<this.flora.length; i++){
 		this.flora[i].update(dt);
 	}
+}
+
+FlowerPot.prototype.remove = function(index){
+	console.log("get the fuck out")
+	//removes the flora, and all blocks of the flower, at that index in flora
+	for (var i=0; i<this.x; i++){
+		for (var j=0; j<this.y; j++){
+			for (var k=0; k<this.z; k++){
+				if (this.flora[index].get(i, j, k)){
+					this.set(i, j, k, null);
+				}
+			}
+		}
+	}
+	this.flora.splice(index,1);
 }
 
 var Flora = function(pot, updatefunc){
@@ -344,7 +364,7 @@ function init(){
 
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
-	scene.add(textMesh1);
+	//scene.add(textMesh1);
 
 	var geometry  = new THREE.SphereGeometry(90, 32, 32);
 	
@@ -509,6 +529,7 @@ function onWindowResize() {
 }
 
 function onMouseClick(event){
+	pots[0].remove(0);
 
 	event.preventDefault();
 	if(hover != null){
