@@ -298,27 +298,8 @@ function init(){
 
 
 	document.addEventListener( 'keydown', onKeyDown, false );
+	window.addEventListener( 'mousemove', onMouseMove, false );
 	window.addEventListener( 'resize', onWindowResize, false );
-
-
-	/*var grid = new Grid(new THREE.Vector3(0,0,0), 2, 2, 2);
-	for (var i=0; i<2; i++){
-		for (var j=0; j<2; j++){
-			grid.set(i, j, 0, 0xff3333);
-			grid.set(i, j, 1, 0x3366ff);
-		}
-	}
-
-	grids.push(grid);
-	grids.push(grid.clone());
-	grids.push(grid.clone());
-	grids[0].group.position.set(1, 1, 1)
-	grids[1].group.position.set(3, 3, 3);
-	grids[2].group.position.set(3, 1, 1);
-	
-	scene.add(grids[0].group);
-	scene.add(grids[1].group);
-	scene.add(grids[2].group);*/
 
 }
 
@@ -366,6 +347,12 @@ function onKeyDown(event){
 			console.log("new world created");
 			generateWorld();
 			break;
+		case 66:
+			console.log("removed world");
+			var grid = grids.pop();
+			scene.remove(grid.group);
+			updateWorldPos();
+			break;
 	}
 }
 
@@ -377,33 +364,34 @@ function onWindowResize() {
 	render();
 }
 
-function onDocumentKeyUp(event){
+function onMouseMove( event ) {
 
-}
+	event.preventDefault();
 
-function onDocumentKeyDown(event){
-	//event.preventDefault();
+	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 
+	raycaster.setFromCamera( mouse, camera );
 
-}
+	var intersects = [];
 
-function onDocumentMouseDown(event){
-	//window.addEventListener( 'resize', onWindowResize, false );
+	for(var i = 0; i < grids.length; i++){
+		intersects = intersects.concat(raycaster.intersectObjects(grids[i].group.children));
+	
+	}
 
+	for(var i = 0; i < intersects.length; i++) {
+		intersects[i].object.parent.rotation.y+=0.01;
+	}
 }
 
 
 function render() {
 	for (var i=0; i<grids.length; i++){
 		grids[i].applyToScene(scene);
-		//grids[i].group.rotation.y+=0.01;
 	}
 
 	var delta = clock.getDelta();
 	for(var i = 0; i < worlds.length; i++){
-		worlds[i].rotation.y += 0.05;
-		worlds[i].position.set(posVector.x, posVector.y + 0.1, posVector.z);
-		console.log("updating position" + worlds.length);
 		posVector.applyAxisAngle(axis, angle);
 	}
 	camControls.update();
