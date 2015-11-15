@@ -375,15 +375,12 @@ function onMouseMove( event ) {
 	var intersects = [];
 
 	for(var i = 0; i < grids.length; i++){
-		
-			var moreinter = raycaster.intersectObjects(grids[i].group.children);
-			console.log("MORE" + moreinter.length);
-			intersects.concat(moreinter);
+		intersects = intersects.concat(raycaster.intersectObjects(grids[i].group.children));
 	
 	}
-	console.log(intersects.length);
+
 	for(var i = 0; i < intersects.length; i++) {
-		intersects[i].object.material.color.setHex(0xffffff);
+		intersects[i].object.parent.rotation.y+=0.01;
 	}
 }
 
@@ -391,14 +388,10 @@ function onMouseMove( event ) {
 function render() {
 	for (var i=0; i<grids.length; i++){
 		grids[i].applyToScene(scene);
-		grids[i].group.rotation.y+=0.01;
 	}
 
 	var delta = clock.getDelta();
 	for(var i = 0; i < worlds.length; i++){
-		worlds[i].rotation.y += 0.005;
-		worlds[i].position.set(posVector.x, posVector.y + 0.1, posVector.z);
-		console.log("updating position" + worlds.length);
 		posVector.applyAxisAngle(axis, angle);
 	}
 	camControls.update();
