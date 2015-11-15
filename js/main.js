@@ -1,11 +1,15 @@
+'use strict'
+
+
 var container, scene, camera, camControls, renderer, controls;
 var clock;
 var planeGeo, cubeGeo;
 var plane, cube;
 var worlds = [];
-var ray_caster, mouse;
+var raycaster, mouse;
 
 var objects = [];
+var grids = [];
 
 var deepcopyArray = function(array){
 	return $.extend(true, [], array);
@@ -28,12 +32,12 @@ var createGrid3 = function(x, y, z, defaultvalue){
 	//creates a 3d grid and stuff. initializes everything to null by default
 
 	defaultvalue = (defaultvalue===undefined ? null : defaultvalue);
-	ret = new Array();
-	for (i=0; i<x; i++){
+	var ret = new Array();
+	for (var i=0; i<x; i++){
 		ret.push([]);
-		for (j=0; j<y; j++){
+		for (var j=0; j<y; j++){
 			ret[i].push([]);
-			for (k=0; k<z; k++){
+			for (var k=0; k<z; k++){
 				ret[i][j][k] = defaultvalue;
 			}
 		}
@@ -41,21 +45,25 @@ var createGrid3 = function(x, y, z, defaultvalue){
 	return ret;
 }
 
-
 var Grid = function(position, x, y, z){
-	this.position = position;
 	this.id = Math.random();
 	this.x = x;
 	this.y = y;
 	this.z = z;
+	
 	this.g = createGrid3(x, y, z, null);
+	this.group = new THREE.Object3D();
+	this.group.position.set(position.clone());
+	this.group.name=this.id;
 }
 
 Grid.prototype.constructor = Grid;
 
-Grid.prototype.copy = function(){
-	//returns new Grid instance with a deep copy of all variables  
-	return $.extend(true, {}, this);
+Grid.prototype.clone = function(){
+	var tmp = new Grid(this.group.position.clone(), this.x, this.y, this.z);
+	tmp.g = $.extend(true, [], this.g);
+	//tmp.group.rotation.set(this.group.rotation.clone());
+	return tmp;
 }
 
 Grid.prototype.get = function(x, y, z){
@@ -80,15 +88,16 @@ Grid.prototype.set = function(x, y, z, val){
 		this.g[x.x][x.y][x.z]=val;
 	}
 }
+
 Grid.prototype.diff = function(grid2){
 	if ((this.x!=grid2.x)||(this.y!=grid2.y)||(this.z!=grid2.z)){
 		console.log("GridDelta called with grids that are not the same size.");
 	}
 	// Returns a list of (x,y,z) triplets where this and grid2 differ
-	ret=[];
-	for (i=0; i<this.x; i++){
-		for (j=0; j<this.y; j++){
-			for (k=0; k<this.z; k++){
+	var ret=[];
+	for (var i=0; i<this.x; i++){
+		for (var j=0; j<this.y; j++){
+			for (var k=0; k<this.z; k++){
 				if ((this.get(i,j,k))!=(grid2.get(i,j,k))){
 					ret.push([i,j,k]);
 				}
@@ -99,34 +108,35 @@ Grid.prototype.diff = function(grid2){
 }
 
 Grid.prototype.applyToScene = function(scene){
-	//
 	var diff;
 	var oldColor;
 	var newColor;
 
-	if (!scene.oldGrid){
-		scene.oldGrid = new Grid(this.position, this.x, this.y, this.z);
+	if (!scene.oldGrids[this.id]){
+		scene.oldGrids[this.id] = new Grid(this.group.position, this.x, this.y, this.z);
 	}
 
-	diff = this.diff(scene.oldGrid);
-	console.log("oldgrid", scene.oldGrid);
-	console.log("grid", this);
-	console.log("diff:", diff);
-	for (i=0; i<diff.length; i++){
-		oldColor = Grid.prototype.get.apply(scene.oldGrid, diff[i]);
+	diff = this.diff(scene.oldGrids[this.id]);
+	//console.log("oldgrid", scene.oldGrid);
+	//console.log("grid", this);
+	//console.log("diff:", diff);
+	for (var i=0; i<diff.length; i++){
+		oldColor = Grid.prototype.get.apply(scene.oldGrids[this.id], diff[i]);
 		newColor = Grid.prototype.get.apply(this, diff[i]);
 		//four cases - do nothing, create new cube, delete cube, change color of cube
 		if (oldColor==newColor){ //don't need to do anything, but this should never trigger
-			console.log("Grid.diff is broken")
-		} 
+			console.log("Grid.diff is broken");
+		}
 
 		else if (oldColor===null){
+			var x = diff[i][0]; //readability
+			var y = diff[i][1];
+			var z = diff[i][2];
 			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshBasicMaterial() );
-			cube.position.set(diff[i][0], diff[i][1], diff[i][2]);
-			cube.position.add(this.position);
-			cube.material.color.setHex(this.get(diff[i][0], diff[i][1], diff[i][2]));
-			cube.name=getBlockName(this.id, diff[i]);
-			scene.add(cube);
+			cube.position.set((this.x/2)-x-0.5, (this.y/2)-y-0.5, (this.z/2)-z-0.5);
+			cube.material.color.setHex(this.get(x, y, z));
+			cube.name = getBlockName(this.id, diff[i]);
+			this.group.add(cube);
 		}
 
 		else if (newColor===null){
@@ -139,17 +149,8 @@ Grid.prototype.applyToScene = function(scene){
 		}
 	}
 
-	scene.oldGrid = this.copy()
+	scene.oldGrids[this.id] = this.clone()
 }
-
-var grid = new Grid(new THREE.Vector3(0,0,0), 2, 2, 2);
-for (i=0; i<2; i++){
-	for (j=0; j<2; j++){
-		grid.set(i, j, 0, 0xff3333);
-		grid.set(i, j, 1, 0x3366ff);
-	}
-}
-
 
 function init(){
 	container = document.createElement('div');
@@ -215,11 +216,11 @@ function init(){
 
 	for ( var i = - size; i <= size; i += step ) {
 
-		geometry.vertices.push( new THREE.Vector3( - size+0.5, -0.5, i+0.5 ) );
-		geometry.vertices.push( new THREE.Vector3(   size+0.5, -0.5, i+0.5 ) );
+		geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
+		geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
 
-		geometry.vertices.push( new THREE.Vector3( i+0.5, -0.5, - size+0.5 ) );
-		geometry.vertices.push( new THREE.Vector3( i+0.5, -0.5,   size+0.5 ) );
+		geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
+		geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
 
 	}
 
@@ -239,7 +240,7 @@ function init(){
 	var directionalLight = new THREE.DirectionalLight( 0xffffff );
 	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
 	//scene.add( directionalLight );
-	
+	scene.oldGrids={};
 
 	//MATERIALS
 	material = new THREE.MeshBasicMaterial( { color: 0x00ff00 });
@@ -247,6 +248,26 @@ function init(){
 
 	document.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'resize', onWindowResize, false );
+
+
+	var grid = new Grid(new THREE.Vector3(0,0,0), 2, 2, 2);
+	for (var i=0; i<2; i++){
+		for (var j=0; j<2; j++){
+			grid.set(i, j, 0, 0xff3333);
+			grid.set(i, j, 1, 0x3366ff);
+		}
+	}
+
+	grids.push(grid);
+	grids.push(grid.clone());
+	grids.push(grid.clone());
+	grids[0].group.position.set(1, 1, 1)
+	grids[1].group.position.set(3, 3, 3);
+	grids[2].group.position.set(3, 1, 1);
+	
+	scene.add(grids[0].group);
+	scene.add(grids[1].group);
+	scene.add(grids[2].group);
 
 }
 
@@ -295,7 +316,7 @@ function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
-	grid.applyToScene(scene);
+	render();
 }
 
 function onDocumentKeyUp(event){
@@ -313,8 +334,15 @@ function onDocumentMouseDown(event){
 
 }
 
+
 function render() {
-	grid.applyToScene(scene);
+	for (var i=0; i<grids.length; i++){
+		grids[i].applyToScene(scene);
+	}
+
+	grids[0].group.rotation.x+=0.01
+	grids[1].group.rotation.x+=0.01
+	grids[2].group.rotation.x+=0.01
 
 	var delta = clock.getDelta();
 	camControls.update();
