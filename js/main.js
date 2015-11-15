@@ -388,7 +388,7 @@ function init(){
 
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
-	var geometry  = new THREE.SphereGeometry(90, 32, 32);
+	var geometry  = new THREE.SphereGeometry(100000, 32, 32);
 	
 	//var material  = new THREE.MeshNormalMaterial(); //rainbow mode
 	var material  = new THREE.MeshBasicMaterial({color: 0x000000});
@@ -500,7 +500,7 @@ function updatePotPos(){
 
 function reset(){
 
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 9999999 );
 	camera.position.set(15,15,15);
 	console.log(camera.rotation);
 	console.log(camera.quaternion);
@@ -624,7 +624,6 @@ function onMouseClick(event){
 function onMouseMove( event ) {
 	event.preventDefault();
 	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
-	console.log("hover:",hover[0]);
 	if(focus && hover != null && hover[0].object.parent && hover[0].object.parent.id == focusedPotID && hover[0].object.geometry.name == "soil"){
 		if(lastObj != null) lastObj.material.color.setHex(lastColor);
 		lastObj = hover[0].object;
