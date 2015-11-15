@@ -12,7 +12,7 @@ var lastColor, lastObj;
 var raycaster, mouse, hover = false;
 var potcolor, soilcolor;
 var planting = false;
-var generatorIndex;
+var genType = "rose";
 
 var objects = [];
 var pots = [];
@@ -22,12 +22,12 @@ $(".Menu-hidden").on('click', function(e){
     $(".Particle-menu").slideToggle(1000);
 });
 
-$("#songNames li").on('click','a',  function(e){
+$("#Flowers li").on('click','a',  function(e){
     e.preventDefault();
     var type = $(this).html()
-    type = type.toLowerCase();
-    type += "Generator";
-    generatorIndex = generators.indexOf(type);
+    genType = type.toLowerCase();
+    console.log(generators[type]);
+
 });
 
 var deepcopyArray = function(array){
@@ -116,7 +116,7 @@ Grid.prototype.get = function(x, y, z){
 
 Grid.prototype.set = function(x, y, z, val){
 	//callable as set(x,y,z,val) or set(vector, val)
-	if(val!==undefined){ //first case
+	if(val !== undefined){ //first case
 		this.g[x][y][z] = val;
 	}
 	else{ //vector case is assumed if only one argument is passed
@@ -466,7 +466,9 @@ var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, 
 var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
 
 
-var generators = [{"rose" : roseGenerator, "daffodil" : daffodilGenerator, "anemone" : anemoneGenerator, "carnation" : carnationGenerator, "stock" : stockGenerator}];
+
+var generators = {"rose" : roseGenerator, "daffodil" : daffodilGenerator, "anemone" : anemoneGenerator, "carnation" : carnationGenerator, "stock" : stockGenerator};
+
 
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
@@ -568,6 +570,7 @@ function onMouseClick(event){
 				obj.position.set(0,7,0);
 				focusedPotID = obj.id;
 				console.log("obj.id",obj.id);
+				$(".Menu-hidden").show();
 				focus = true;
 			}else if(obj.id != focusedPotID){
 				updatePotPos();
@@ -584,7 +587,7 @@ function onMouseClick(event){
 					if(obj.name == pots[i].group.name){
 						console.log("PLANTING BITCH" + pots[i].group.name);
 						console.log("voxel name split", voxel.name, new THREE.Vector3(voxel.truePosition));
-						pots[i].plant(anemoneGenerator, new THREE.Vector3(voxel.truePosition[0], voxel.truePosition[1]+1, voxel.truePosition[2]));
+						pots[i].plant(generators[genType], new THREE.Vector3(voxel.truePosition[0], voxel.truePosition[1]+1, voxel.truePosition[2]));
 						//pots[i].plant(anemoneGenerator, new THREE.Vector3(10, pots[i].y-1, 3));
 						console.log("flora.length", pots[i].flora.length);
 					}
