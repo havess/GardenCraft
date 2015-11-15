@@ -1,7 +1,7 @@
 var container, scene, camera, camControls, renderer, controls;
 var clock;
-var planeGeo, cubeGeo;
-var plane, cube;
+var planeGeo, cubeGeo, sphereGeo;
+var plane, cube, sphere;
 var worlds = [];
 var ray_caster, mouse;
 
@@ -12,7 +12,7 @@ var deepcopyArray = function(array){
 }
 
 var getBlockString = function(x, y, z){
-	if (y===undefined){
+	if (y === undefined){
 		return [x,y,z].join("|");
 	}
 	else{
@@ -27,13 +27,13 @@ var getBlockName = function(id, x, y, z){
 var createGrid3 = function(x, y, z, defaultvalue){
 	//creates a 3d grid and stuff. initializes everything to null by default
 
-	defaultvalue = (defaultvalue===undefined ? null : defaultvalue);
+	defaultvalue = (defaultvalue === undefined ? null : defaultvalue);
 	ret = new Array();
-	for (i=0; i<x; i++){
+	for (i = 0; i < x; i++){
 		ret.push([]);
-		for (j=0; j<y; j++){
+		for (j = 0; j < y; j++){
 			ret[i].push([]);
-			for (k=0; k<z; k++){
+			for (k = 0; k < z; k++){
 				ret[i][j][k] = defaultvalue;
 			}
 		}
@@ -202,8 +202,13 @@ function init(){
 	planeGeo = new THREE.PlaneBufferGeometry(1000,1000);
 	planeGeo.rotateX( - Math.PI / 2 );
 
-	//
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
+
+	var geometry  = new THREE.SphereGeometry(90, 32, 32);
+	var material  = new THREE.MeshBasicMaterial({color: 0x000000});
+	material.side  = THREE.BackSide;
+	var mesh  = new THREE.Mesh(geometry, material);
+	scene.add(mesh);
 
 	//MESHES
 	plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({visible: false}));
@@ -223,7 +228,7 @@ function init(){
 
 	}
 
-	var material = new THREE.LineBasicMaterial( { color: 0x000000, opacity: 1, transparent: true } );
+	var material = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 1, transparent: true } );
 
 	var line = new THREE.LineSegments( geometry, material );
 	scene.add( line );
@@ -263,8 +268,8 @@ function updateWorldPos(){
 	var axis = new THREE.Vector3(0,1,0); //z axis
 	var posVector = new THREE.Vector3(distFromO,0,0);
 	var angle = (2*Math.PI)/worlds.length;
-	worlds[0].position.set(posVector.x, posVector.y, posVector.z);
-	console.log("ANGLE" + angle);
+
+
 	for(var i = 0; i < worlds.length; i++){
 		worlds[i].position.set(posVector.x, posVector.y, posVector.z);
 		console.log("updating position" + worlds.length);
@@ -295,7 +300,7 @@ function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
-	grid.applyToScene(scene);
+	//grid.applyToScene(scene);
 }
 
 function onDocumentKeyUp(event){
@@ -314,9 +319,16 @@ function onDocumentMouseDown(event){
 }
 
 function render() {
-	grid.applyToScene(scene);
-
+	//grid.applyToScene(scene);
 	var delta = clock.getDelta();
+	for(var i = 0; i < worlds.length; i++){
+		worlds[i].rotation.y += 0.005;
+		worlds[i].position.set(posVector.x, posVector.y + 0.1, posVector.z);
+		console.log("updating position" + worlds.length);
+		posVector.applyAxisAngle(axis, angle);
+	}
+
+
 	camControls.update();
 	renderer.clear();
 	requestAnimationFrame(render);
