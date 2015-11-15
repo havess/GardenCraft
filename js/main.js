@@ -211,8 +211,8 @@ function init(){
 	raycaster = new THREE.Raycaster();
 
 	//CAMERA
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
-	camera.position.set(2,2,2);
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	camera.position.set(10,0,10);
 
 	camControls = new THREE.TrackballControls( camera );
 	camControls.rotateSpeed = 10.0;
@@ -396,12 +396,12 @@ function onDocumentMouseDown(event){
 function render() {
 	for (var i=0; i<grids.length; i++){
 		grids[i].applyToScene(scene);
-		grids[i].group.rotation.y+=0.01;
+		//grids[i].group.rotation.y+=0.01;
 	}
 
 	var delta = clock.getDelta();
 	for(var i = 0; i < worlds.length; i++){
-		worlds[i].rotation.y += 0.005;
+		worlds[i].rotation.y += 0.05;
 		worlds[i].position.set(posVector.x, posVector.y + 0.1, posVector.z);
 		console.log("updating position" + worlds.length);
 		posVector.applyAxisAngle(axis, angle);
