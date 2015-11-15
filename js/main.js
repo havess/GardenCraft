@@ -10,7 +10,7 @@ var worlds = [];
 var raycaster, mouse, hover = false;
 
 var objects = [];
-var grids = [];
+var pots = [];
 
 var deepcopyArray = function(array){
 	return $.extend(true, [], array);
@@ -23,6 +23,11 @@ var getBlockString = function(x, y, z){
 	else{
 		return [x.x, x.y, x.z].join("|");		
 	}
+}
+
+var randrange = function(low, high){
+	//generates an integer between low and high inclusive
+	return low+Math.floor((high-low+1)*Math.random());
 }
 
 var getBlockName = function(id, x, y, z){
@@ -55,7 +60,7 @@ var Grid = function(position, x, y, z){
 	
 	this.g = createGrid3(x, y, z, null);
 	this.group = new THREE.Object3D();
-	this.group.position.set(position.clone());
+	this.group.position.set(position);
 	this.group.name=this.id;
 }
 
@@ -70,12 +75,20 @@ Grid.prototype.clone = function(){
 
 Grid.prototype.get = function(x, y, z){
 	//callable as get(x,y,z) or get(vector)
-	if(y!=undefined){ //first case
+	if ((x<0) || (y<0) || z<0){
+		return null;
+	}
+	if (x>=this.x || y>=this.y || z>=this.z){
+		return null;
+	}
+
+	if(y!=undefined || z!=undefined){ //first case
+		//console.log("x, y, z",x, y, z);
 		return this.g[x][y][z];
 	}
 	else{ //vector case is assumed if only one argument is passed
-		console.log("this.g is",this.g);
-		console.log("x is",x);
+		console.log("this.g is", this.g);
+		console.log("x is", x);
 		console.log();
 		return this.g[x.x][x.y][x.z];
 	}
@@ -87,6 +100,7 @@ Grid.prototype.set = function(x, y, z, val){
 		this.g[x][y][z] = val;
 	}
 	else{ //vector case is assumed if only one argument is passed
+		console.log(x);
 		this.g[x.x][x.y][x.z]=val;
 	}
 }
@@ -111,9 +125,26 @@ Grid.prototype.mapfill = function(f){
 	}
 }
 
+Grid.prototype.insertBlock = function(x, y, z, _color){
+	var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial({color: _color}) );
+	cube.position.set((this.x/2)-x-0.5, (this.y/2)-y-0.5, (this.z/2)-z-0.5);
+	cube.name = getBlockName(this.id, x, y, z);
+	this.group.add(cube);
+}
+
+Grid.prototype.isAvailable = function(x, y, z){
+	if ((x<0) || (y<0) || z<0){
+		return false;
+	}
+	if (x>=this.x || y>=this.y || z>=this.z){
+		return false;
+	}
+	return (this.get(x,y,z)===null);
+}
+
 Grid.prototype.diff = function(grid2){
 	if ((this.x!=grid2.x)||(this.y!=grid2.y)||(this.z!=grid2.z)){
-		console.log("GridDelta called with grids that are not the same size.");
+		console.log("GridDelta called with pots that are not the same size.");
 	}
 	// Returns a list of (x,y,z) triplets where this and grid2 differ
 	var ret=[];
@@ -134,16 +165,16 @@ Grid.prototype.applyToScene = function(scene){
 	var oldColor;
 	var newColor;
 
-	if (!scene.oldGrids[this.id]){
-		scene.oldGrids[this.id] = new Grid(this.group.position, this.x, this.y, this.z);
+	if (!scene.oldpots[this.id]){
+		scene.oldpots[this.id] = new Grid(this.group.position, this.x, this.y, this.z);
 	}
 
-	diff = this.diff(scene.oldGrids[this.id]);
+	diff = this.diff(scene.oldpots[this.id]);
 	//console.log("oldgrid", scene.oldGrid);
 	//console.log("grid", this);
 	//console.log("diff:", diff);
 	for (var i=0; i<diff.length; i++){
-		oldColor = Grid.prototype.get.apply(scene.oldGrids[this.id], diff[i]);
+		oldColor = Grid.prototype.get.apply(scene.oldpots[this.id], diff[i]);
 		newColor = Grid.prototype.get.apply(this, diff[i]);
 		//four cases - do nothing, create new cube, delete cube, change color of cube
 		if (oldColor==newColor){ //don't need to do anything, but this should never trigger
@@ -151,14 +182,7 @@ Grid.prototype.applyToScene = function(scene){
 		}
 
 		else if (oldColor===null){
-			var x = diff[i][0]; //readability
-			var y = diff[i][1];
-			var z = diff[i][2];
-			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
-			cube.position.set((this.x/2)-x-0.5, (this.y/2)-y-0.5, (this.z/2)-z-0.5);
-			cube.material.color.setHex(this.get(x, y, z));
-			cube.name = getBlockName(this.id, diff[i]);
-			this.group.add(cube);
+			this.insertBlock(diff[i][0], diff[i][1], diff[i][2], this.get(diff[i][0], diff[i][1], diff[i][2]));
 		}
 
 		else if (newColor===null){
@@ -171,29 +195,98 @@ Grid.prototype.applyToScene = function(scene){
 		}
 	}
 
-	scene.oldGrids[this.id] = this.clone()
+	scene.oldpots[this.id] = this.clone()
 }
 
-var attachFlowerPot = function(grid){
-	//does exactly what the name says
-	for (var i=-1; i<grid.x+1; i++) {
-		for (var k=-1; k<grid.z+1; k++) {
-			var j = grid.y;
-			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
-			cube.material.color.setHex(0x996633);
-			cube.position.set((grid.x/2)-i-0.5, (grid.y/2)-j-0.5, (grid.z/2)-k-0.5);
-			cube.name = getBlockName(grid.id, i, j, k);
-			grid.group.add(cube);
-			if (i==-1 || i==grid.x || k==-1 || k==grid.z){
-				var j = grid.y-1;
-				var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
-				cube.material.color.setHex(0x996633);
-				cube.position.set((grid.x/2)-i-0.5, (grid.y/2)-j-0.5, (grid.z/2)-k-0.5);
-				cube.name = getBlockName(grid.id, i, j, k);
-				grid.group.add(cube);
-			}
-		}
+var FlowerPot = function(position, x, y, z){
+	Grid.call(this, position, x, y, z);
+
+	this.flora = [];
+
+	var allowance = 3 //non-pot grid space to leave on each side for flowers to grow into
+
+	var potcolor = 0x996633;
+	var soilcolor = 0x5f4020;
+
+	var soilGeo = new THREE.BoxGeometry(this.x-2*allowance, 1, this.z-2*allowance);
+	var soil = new THREE.Mesh(soilGeo, new THREE.MeshLambertMaterial({color: soilcolor}))
+	soil.position.set(0, -this.y/2 -0.5, 0);
+	this.group.add(soil);
+
+	var potGeo = new THREE.BoxGeometry(this.x-2*allowance, 1, this.z-2*allowance);
+	var potmesh = new THREE.Mesh(potGeo, new THREE.MeshLambertMaterial({color: potcolor}))
+	potmesh.position.set(0, -this.y/2 -2.5, 0);
+	this.group.add(potmesh);
+
+	var sideGeo = new THREE.BoxGeometry(this.x+2- 2*allowance,3,1);
+	var sidemesh = new THREE.Mesh(sideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
+	sidemesh.position.set(0, -this.y/2-0.5, (this.z-2*allowance)/2+0.5);
+	this.group.add(sidemesh);
+
+	var sideGeo = new THREE.BoxGeometry(this.x+2- 2*allowance,3,1);
+	var sidemesh = new THREE.Mesh(sideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
+	sidemesh.position.set(0, -this.y/2-0.5, -(this.z-2*allowance)/2 - 0.5);
+	this.group.add(sidemesh);
+
+	var othersideGeo = new THREE.BoxGeometry(1,3,this.z + 2 - 2*allowance);
+	var othersidemesh = new THREE.Mesh(othersideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
+	othersidemesh.position.set(-(this.z-2*allowance)/2 - 0.5, -this.y/2-0.5, 0);
+	this.group.add(othersidemesh);
+
+	var othersideGeo = new THREE.BoxGeometry(1,3,this.z + 2 - 2*allowance);
+	var othersidemesh = new THREE.Mesh(othersideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
+	othersidemesh.position.set((this.z- 2*allowance)/2 + 0.5, -this.y/2-0.5, 0);
+	this.group.add(othersidemesh);
+}
+
+FlowerPot.prototype = new Grid;
+FlowerPot.prototype.constructor = FlowerPot;
+
+FlowerPot.prototype.plant = function(florafunc, startpos){
+	var newFlora = new Flora(this, florafunc);
+	newFlora.startpos = startpos;
+	newFlora.pot = this;
+	newFlora.updatefunc = florafunc;
+	this.flora.push(newFlora);
+}
+
+FlowerPot.prototype.update = function(dt){
+	//console.log("FlowerPot.update called");
+	for (var i=0; i<this.flora.length; i++){
+		this.flora[i].update(dt);
 	}
+}
+
+var Flora = function(pot, updatefunc){
+	//func should take (this, dt)
+	Grid.call(this, new THREE.Vector3(2, 2, 2), pot.x, pot.y, pot.z);
+	this.seed = Math.random();
+	this.updatefunc = updatefunc;
+}
+
+Flora.prototype = new Grid;
+
+Flora.prototype.constructor = Flora;
+
+Flora.prototype.clone = function(){
+	//IMPLEMENT LATER
+}
+
+Flora.prototype.growTo = function(x, y, z, color){
+	//represents an attempt by the plant to grow to a certain point.
+	//returns 1 if successful, 0 otherwise
+	if (this.pot.isAvailable(x, y, z)){
+		this.set(x, y, z, color);
+		this.pot.set(x, y, z, color);
+		return 1;
+	}
+	return 0;
+}
+
+Flora.prototype.update = function(dt){
+	this.pot; //will error if update() is called without function being potted
+	this.updatefunc(this, dt);
+	this.age+=dt;
 }
 
 function init(){
@@ -211,14 +304,9 @@ function init(){
 	//RAYCASTER
 	raycaster = new THREE.Raycaster();
 
-	//CAMERA
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
+
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
 	camera.position.set(15,15,15);
-	console.log(camera.rotation);
-	console.log(camera.quaternion);
-	cameraPos0 = camera.position.clone()
-    cameraUp0 = camera.up.clone()
-    cameraZoom = camera.position.z
 
 	camControls = new THREE.TrackballControls( camera );
 	camControls.rotateSpeed = 10.0;
@@ -263,33 +351,6 @@ function init(){
 	var mesh  = new THREE.Mesh(geometry, material);
 	scene.add(mesh);
 
-	//MESHES
-	plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({visible: false}));
-	scene.add(plane);
-
-	var size = 20, step = 1;
-
-	var geometry = new THREE.Geometry();
-
-	for ( var i = - size; i <= size; i += step ) {
-
-		geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
-		geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
-
-		geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
-		geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
-
-	}
-
-	var material = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 1, transparent: true } );
-
-	var line = new THREE.LineSegments( geometry, material );
-	scene.add( line );
-
-
-	//OBJECTS
-	objects.push(plane);
-
 	//LIGHTS
 	var ambientLight = new THREE.AmbientLight( 0x606060 );
 	scene.add( ambientLight );
@@ -297,11 +358,10 @@ function init(){
 	var directionalLight = new THREE.DirectionalLight( 0xffffff );
 	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
 	scene.add( directionalLight );
-	scene.oldGrids={};
+	scene.oldpots={};
 
 	//MATERIALS
 	material = new THREE.MeshLambertMaterial( { color: 0x00ff00 });
-
 
 	document.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'mousemove', onMouseMove, false );
@@ -310,31 +370,83 @@ function init(){
 
 }
 
-function generateWorld(){
-	var grid = new Grid(new THREE.Vector3(0,0,0), 10, 10, 10);
+var flowerGeneratorGenerator = function(_colorLiving, _colorPetals, _colorCenter, petals, maxheight){
+	return function(self, dt){
+		if (this._done){
+			return;
+		}
 
-	grid.mapfill( function(i, j, k){
+		self.clock+=dt;
+
+		var colorLiving = _colorLiving;
+		var colorPetals = _colorPetals;
+		var colorCenter = _colorCenter;
+
+		if (self._clock===undefined){ //if first time running
+			self._clock=0;
+			self._headpos = self.startpos;//current coordinates of rose head
+			self.growTo(self._headpos.x, self._headpos.y, self._headpos.z, colorLiving);
+			this._done=false;
+			this.height=1;
+		}
+
+		if (Math.random()<0.15){ //grow
+			if (this.height==maxheight || Math.random()<0.1){
+				self.growTo(self._headpos.x, self._headpos.y-1, self._headpos.z, colorCenter);
+				for (var i=0; i<petals.length; i++){
+					self.growTo(self._headpos.x+petals[i][0], self._headpos.y-1+petals[i][1], self._headpos.z+petals[i][2], colorPetals);
+				}
+
+				this._done=true;
+			}
+			else{
+				var nx = [-1,0,0,0,0,0,1][randrange(0,6)];
+				var nz = [-1,0,0,0,0,0,1][randrange(0,6)];
+				//console.log('headpos',self._headpos);
+				if (self.growTo(self._headpos.x+nx, self._headpos.y-1, self._headpos.z+nz, colorLiving)){
+					self._headpos.add(new THREE.Vector3(nx, -1, nz));
+					this.height++;
+				}
+			}
+		}
+	}
+}
+
+
+
+var roseGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xff3333, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
+var daffodilGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xf4f53d, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
+var anemoneGenerator = flowerGeneratorGenerator(0x267326, 0xf0e5ff, 0x6600ff, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1]], 6) //greenish=yellow, really light purple, purple
+var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, [[-1, -2, 0],[1, -2, 0],[0, -2, -1],[0, -2, 1],[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1],[0, -1, 0]], 6) //greenish=yellow, really light purple, purple
+var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
+
+generators = [roseGenerator, daffodilGenerator, anemoneGenerator, carnationGenerator, stockGenerator];
+
+function generatePot(){
+	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
+	pot.plant(daffodilGenerator, new THREE.Vector3(3, pot.y-1, 3));
+	pot.plant(stockGenerator, new THREE.Vector3(10, pot.y-1, 3));
+	pot.plant(carnationGenerator, new THREE.Vector3(3, pot.y-1, 10));
+	/*pot.mapfill( function(i, j, k){
 		if ((Math.random())<0.1){
 			return 0x33cc33;
 		}
 		return null;
-	} );
+	} );*/
 
-	grid.group.position.set(0, 0, 0);
-	attachFlowerPot(grid);
-	grids.push(grid);
-	updateWorldPos();
-	scene.add(grid.group);
-
+	pot.group.position.set(0, 0, 0);
+	pots.push(pot);
+	updatePotPos();
+	scene.add(pot.group);
 }
 
-function updateWorldPos(){
-	var distFromO = 10*(grids.length-1)/2; 
+function updatePotPos(){
+	var distFromO = 10*(pots.length-1)/2; 
 	var axis = new THREE.Vector3(0,1,0); //z axis
 	var posVector = new THREE.Vector3(distFromO,7,0);
-	var angle = (2*Math.PI)/grids.length;
-	for(var i = 0; i < grids.length; i++){
-		grids[i].group.position.set(posVector.x,posVector.y,posVector.z);
+	var angle = (2*Math.PI)/pots.length;
+	for(var i = 0; i < pots.length; i++){
+		pots[i].group.position.set(posVector.x,posVector.y,posVector.z);
 		posVector.applyAxisAngle(axis, angle);
 	}
 }
@@ -367,13 +479,13 @@ function onKeyDown(event){
 			break;
 		case 78:
 			console.log("new world created");
-			generateWorld();
+			generatePot();
 			break;
 		case 66:
 			console.log("removed world");
-			var grid = grids.pop();
-			scene.remove(grid.group);
-			updateWorldPos();
+			var pot = pots.pop();
+			scene.remove(pot.group);
+			updatePotPos();
 			break;
 		case 90:
 			console.log(camera.position);
@@ -384,7 +496,6 @@ function onKeyDown(event){
 
 
 function onWindowResize() {
-
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -419,8 +530,8 @@ function getIntersect(){
 
 	var intersects = [];
 
-	for(var i = 0; i < grids.length; i++){
-		intersects = intersects.concat(raycaster.intersectObjects(grids[i].group.children));
+	for(var i = 0; i < pots.length; i++){
+		intersects = intersects.concat(raycaster.intersectObjects(pots[i].group.children));
 	
 	}
 
@@ -435,22 +546,22 @@ function getIntersect(){
 
 function render() {
 
+	var delta = clock.getDelta();
 
-
-	hover = getIntersect();
-
-
-	for (var i=0; i < grids.length; i++){
-		grids[i].applyToScene(scene);
+	for (var i=0; i<pots.length; i++){
+		pots[i].update(delta);
+		pots[i].applyToScene(scene);
 	}
 
-	var delta = clock.getDelta();
+	for(var i = 0; i < worlds.length; i++){
+		posVector.applyAxisAngle(axis, angle);
+	}
+	
 	camControls.update();
 	renderer.clear();
 	requestAnimationFrame(render);
 	renderer.render(scene, camera);
 };
-
 
 
 init();
