@@ -12,9 +12,23 @@ var lastColor, lastObj;
 var raycaster, mouse, hover = false;
 var potcolor, soilcolor;
 var planting = false;
+var generatorIndex;
 
 var objects = [];
 var pots = [];
+
+
+$(".Menu-hidden").on('click', function(e){
+    $(".Particle-menu").slideToggle(1000);
+});
+
+$("#songNames li").on('click','a',  function(e){
+    e.preventDefault();
+    var type = $(this).html()
+    type = type.toLowerCase();
+    type += "Generator";
+    generatorIndex = generators.indexOf(type);
+});
 
 var deepcopyArray = function(array){
 	return $.extend(true, [], array);
@@ -441,8 +455,6 @@ var flowerGeneratorGenerator = function(_colorLiving, _colorPetals, _colorCenter
 	}
 }
 
-
-
 var roseGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xff3333, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
 var daffodilGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xf4f53d, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
 var anemoneGenerator = flowerGeneratorGenerator(0x267326, 0xf0e5ff, 0x6600ff, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1]], 6) //greenish=yellow, really light purple, purple
@@ -450,7 +462,7 @@ var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, 
 var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
 
 
-var generators = [roseGenerator, daffodilGenerator, anemoneGenerator, carnationGenerator, stockGenerator];
+var generators = [{"rose" : roseGenerator, "daffodil" : daffodilGenerator, "anemone" : anemoneGenerator, "carnation" : carnationGenerator, "stock" : stockGenerator}];
 
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
@@ -471,7 +483,7 @@ function generatePot(){
 }
 
 function updatePotPos(){
-	var distFromO = 10*(pots.length-1)/2; 
+	var distFromO = 20*(pots.length-1)/2; 
 	var axis = new THREE.Vector3(0,1,0); //z axis
 	posVector = new THREE.Vector3(distFromO,7,0);
 	var angle = (2*Math.PI)/pots.length;
@@ -496,6 +508,13 @@ function reset(){
 	camControls.noPan = false;
 	camControls.staticMoving = true;
 	camControls.dynamicDampingFactor = 0.3;
+
+	updatePotPos();
+	focus = false;
+	$('.Menu-hidden').hide();
+	if(lastObj != null) lastObj.material.color.setHex(lastColor);
+	focusedPot = null;
+	focusedPotID = null;
 	
 
 }
@@ -506,14 +525,10 @@ function onKeyDown(event){
 		case 32:
 			console.log("space bar pressed");
 			reset();
-			updatePotPos();
-			focus = false;
-			if(lastObj != null) lastObj.material.color.setHex(lastColor);
-			focusedPot = null;
-			focusedPotID = null;
 			break;
 		case 78:
 			console.log("new world created");
+			reset();
 			generatePot();
 			break;
 		case 66:
@@ -578,15 +593,22 @@ function onMouseClick(event){
 		if(hover != null){
 			var voxel = hover[0].object;
 			var obj = hover[0].object.parent;
-			for (var i=0; i<pots.length; i++){
-				if (pots[i].group.name == obj.name){
-					for (var k=0; k<pots[i].flora.length; k++){
-						if (null !== pots[i].flora[k].get(voxel.truePosition[0], voxel.truePosition[1], voxel.truePosition[2])){
-							pots[i].remove(k);
-							hover = getIntersect();
-							return;
-						}
-					}	
+			if (!focus){
+				//delete the pot
+			}
+			else if (obj.id != focusedPotID){
+			}
+			else{
+				for (var i=0; i<pots.length; i++){
+					if (pots[i].group.name == obj.name){
+						for (var k=0; k<pots[i].flora.length; k++){
+							if (null !== pots[i].flora[k].get(voxel.truePosition[0], voxel.truePosition[1], voxel.truePosition[2])){
+								pots[i].remove(k);
+								hover = getIntersect();
+								return;
+							}
+						}	
+					}
 				}
 			}
 		}
@@ -597,6 +619,7 @@ function onMouseMove( event ) {
 
 	event.preventDefault();
 	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+	console.log("hover:",hover);
 	if(focus && hover != null && hover[0].object.parent.id == focusedPotID && hover[0].object.geometry.name == "soil"){
 		if(lastObj != null) lastObj.material.color.setHex(lastColor);
 		lastObj = hover[0].object;
@@ -614,7 +637,6 @@ function getIntersect(){
 
 	for(var i = 0; i < pots.length; i++){
 		intersects = intersects.concat(raycaster.intersectObjects(pots[i].group.children));
-	
 	}
 
 	if(intersects.length > 0){
