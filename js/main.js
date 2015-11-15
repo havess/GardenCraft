@@ -24,6 +24,11 @@ var getBlockString = function(x, y, z){
 	}
 }
 
+var randrange = function(low, high){
+	//generates an integer between low and high inclusive
+	return low+Math.floor((high-low+1)*Math.random());
+}
+
 var getBlockName = function(id, x, y, z){
 	return id+'|'+getBlockString(x, y, z);
 }
@@ -54,7 +59,7 @@ var Grid = function(position, x, y, z){
 	
 	this.g = createGrid3(x, y, z, null);
 	this.group = new THREE.Object3D();
-	this.group.position.set(position.clone());
+	this.group.position.set(position);
 	this.group.name=this.id;
 }
 
@@ -69,12 +74,20 @@ Grid.prototype.clone = function(){
 
 Grid.prototype.get = function(x, y, z){
 	//callable as get(x,y,z) or get(vector)
-	if(y!=undefined){ //first case
+	if ((x<0) || (y<0) || z<0){
+		return null;
+	}
+	if (x>=this.x || y>=this.y || z>=this.z){
+		return null;
+	}
+
+	if(y!=undefined || z!=undefined){ //first case
+		//console.log("x, y, z",x, y, z);
 		return this.g[x][y][z];
 	}
 	else{ //vector case is assumed if only one argument is passed
-		console.log("this.g is",this.g);
-		console.log("x is",x);
+		console.log("this.g is", this.g);
+		console.log("x is", x);
 		console.log();
 		return this.g[x.x][x.y][x.z];
 	}
@@ -86,6 +99,7 @@ Grid.prototype.set = function(x, y, z, val){
 		this.g[x][y][z] = val;
 	}
 	else{ //vector case is assumed if only one argument is passed
+		console.log(x);
 		this.g[x.x][x.y][x.z]=val;
 	}
 }
@@ -108,6 +122,23 @@ Grid.prototype.mapfill = function(f){
 			}
 		}
 	}
+}
+
+Grid.prototype.insertBlock = function(x, y, z, _color){
+	var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial({color: _color}) );
+	cube.position.set((this.x/2)-x-0.5, (this.y/2)-y-0.5, (this.z/2)-z-0.5);
+	cube.name = getBlockName(this.id, x, y, z);
+	this.group.add(cube);
+}
+
+Grid.prototype.isAvailable = function(x, y, z){
+	if ((x<0) || (y<0) || z<0){
+		return false;
+	}
+	if (x>=this.x || y>=this.y || z>=this.z){
+		return false;
+	}
+	return (this.get(x,y,z)===null);
 }
 
 Grid.prototype.diff = function(grid2){
@@ -150,14 +181,7 @@ Grid.prototype.applyToScene = function(scene){
 		}
 
 		else if (oldColor===null){
-			var x = diff[i][0]; //readability
-			var y = diff[i][1];
-			var z = diff[i][2];
-			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
-			cube.position.set((this.x/2)-x-0.5, (this.y/2)-y-0.5, (this.z/2)-z-0.5);
-			cube.material.color.setHex(this.get(x, y, z));
-			cube.name = getBlockName(this.id, diff[i]);
-			this.group.add(cube);
+			this.insertBlock(diff[i][0], diff[i][1], diff[i][2], this.get(diff[i][0], diff[i][1], diff[i][2]));
 		}
 
 		else if (newColor===null){
@@ -176,18 +200,27 @@ Grid.prototype.applyToScene = function(scene){
 var FlowerPot = function(position, x, y, z){
 	Grid.call(this, position, x, y, z);
 
+	this.flora = [];
 
-	//now attach the actual flower pot
-	
+	//now attach the actual flower pot with a bunch of ugly for loops
 	for (var i=-1; i<this.x+1; i++) {
 		for (var k=-1; k<this.z+1; k++) {
 			var j = this.y;
 			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
-			cube.material.color.setHex(0x996633);
+			cube.material.color.setHex(0x5f4020);
 			cube.position.set((this.x/2)-i-0.5, (this.y/2)-j-0.5, (this.z/2)-k-0.5);
 			cube.name = getBlockName(this.id, i, j, k);
 			this.group.add(cube);
+
+
 			if (i==-1 || i==this.x || k==-1 || k==this.z){
+				var j = this.y;
+				var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
+				cube.material.color.setHex(0x996633);
+				cube.position.set((this.x/2)-i-0.5, (this.y/2)-j-0.5, (this.z/2)-k-0.5);
+				cube.name = getBlockName(this.id, i, j, k);
+				this.group.add(cube);
+
 				var j = this.y-1;
 				var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
 				cube.material.color.setHex(0x996633);
@@ -198,10 +231,78 @@ var FlowerPot = function(position, x, y, z){
 		}
 	}
 
+	for (var i=0; i<this.x; i++) {
+		for (var k=0; k<this.z; k++) {
+			var j = this.y+1;
+			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
+			cube.material.color.setHex(0x996633);
+			cube.position.set((this.x/2)-i-0.5, (this.y/2)-j-0.5, (this.z/2)-k-0.5);
+			cube.name = getBlockName(this.id, i, j, k);
+			this.group.add(cube);
+		}
+	}
+
+	for (var i=1; i<this.x-1; i++) {
+		for (var k=1; k<this.z-1; k++) {
+			var j = this.y+2;
+			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
+			cube.material.color.setHex(0x996633);
+			cube.position.set((this.x/2)-i-0.5, (this.y/2)-j-0.5, (this.z/2)-k-0.5);
+			cube.name = getBlockName(this.id, i, j, k);
+			this.group.add(cube);
+		}
+	}
 }
 
-FlowerPot.prototype = Grid.prototype;
+FlowerPot.prototype = new Grid;
 FlowerPot.prototype.constructor = FlowerPot;
+
+FlowerPot.prototype.plant = function(florafunc, startpos){
+	var newFlora = new Flora(this, florafunc);
+	newFlora.startpos = startpos;
+	newFlora.pot = this;
+	newFlora.updatefunc = florafunc;
+	this.flora.push(newFlora);
+}
+
+FlowerPot.prototype.update = function(dt){
+	console.log("FlowerPot.update called");
+	for (var i=0; i<this.flora.length; i++){
+		this.flora[i].update(dt);
+	}
+}
+
+var Flora = function(pot, updatefunc){
+	//func should take (this, dt)
+	Grid.call(this, new THREE.Vector3(2, 2, 2), pot.x, pot.y, pot.z);
+	this.seed = Math.random();
+	this.updatefunc = updatefunc;
+}
+
+Flora.prototype = new Grid;
+
+Flora.prototype.constructor = Flora;
+
+Flora.prototype.clone = function(){
+	//IMPLEMENT LATER
+}
+
+Flora.prototype.growTo = function(x, y, z, color){
+	//represents an attempt by the plant to grow to a certain point.
+	//returns 1 if successful, 0 otherwise
+	if (this.pot.isAvailable(x, y, z)){
+		this.set(x, y, z, color);
+		this.pot.set(x, y, z, color);
+		return 1;
+	}
+	return 0;
+}
+
+Flora.prototype.update = function(dt){
+	this.pot; //will error if update() is called without function being potted
+	this.updatefunc(this, dt);
+	this.age+=dt;
+}
 
 function init(){
 	container = document.createElement('div');
@@ -265,33 +366,6 @@ function init(){
 	var mesh  = new THREE.Mesh(geometry, material);
 	scene.add(mesh);
 
-	//MESHES
-	plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({visible: false}));
-	scene.add(plane);
-
-	var size = 20, step = 1;
-
-	var geometry = new THREE.Geometry();
-
-	for ( var i = - size; i <= size; i += step ) {
-
-		geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
-		geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
-
-		geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
-		geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
-
-	}
-
-	var material = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 1, transparent: true } );
-
-	var line = new THREE.LineSegments( geometry, material );
-	scene.add( line );
-
-
-	//OBJECTS
-	objects.push(plane);
-
 	//LIGHTS
 	var ambientLight = new THREE.AmbientLight( 0x606060 );
 	scene.add( ambientLight );
@@ -310,15 +384,54 @@ function init(){
 
 }
 
+var roseGenerator = function (self, dt){
+	console.log("roseGenerator called");
+	var colorLiving = 0x00cc00;
+	var colorPetals = 0xff3333;
+	var colorCenter = 0xffcc00;
+	if (this._done){
+		return;
+	}
+
+	if (self._clock===undefined){ //if first time running
+		self._clock=0;
+		self._headpos = self.startpos;//current coordinates of rose head
+		self.growTo(self._headpos.x, self._headpos.y, self._headpos.z, colorLiving);
+		this._done=false;
+	}
+
+	if (Math.random()<0.2){ //grow
+		if (self._headpos.y-2==0 || Math.random()<0.1){
+			self.growTo(self._headpos.x, self._headpos.y-1, self._headpos.z, colorCenter);
+			self.growTo(self._headpos.x, self._headpos.y-1, self._headpos.z+1, colorPetals);
+			self.growTo(self._headpos.x, self._headpos.y-1, self._headpos.z-1, colorPetals);
+			self.growTo(self._headpos.x+1, self._headpos.y-1, self._headpos.z, colorPetals);
+			self.growTo(self._headpos.x-1, self._headpos.y-1, self._headpos.z, colorPetals);
+
+			this._done=true;
+		}
+		else{
+			var nx = [-1,0,0,0,0,0,1][randrange(0,6)];
+			var nz = [-1,0,0,0,0,0,1][randrange(0,6)];
+			console.log('headpos',self._headpos);
+			if (self.growTo(self._headpos.x+nx, self._headpos.y-1, self._headpos.z+nz, colorLiving)){
+				self._headpos.add(new THREE.Vector3(nx, -1, nz));
+			}
+		}
+	}
+	//random walks up, eventually creates red head
+}
+
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 10, 10, 10);
-
-	pot.mapfill( function(i, j, k){
+	pot.plant(roseGenerator, new THREE.Vector3(4,9,4));
+	pot.plant(roseGenerator, new THREE.Vector3(2,9,2));
+	/*pot.mapfill( function(i, j, k){
 		if ((Math.random())<0.1){
 			return 0x33cc33;
 		}
 		return null;
-	} );
+	} );*/
 
 	pot.group.position.set(0, 0, 0);
 	pots.push(pot);
@@ -390,11 +503,16 @@ function onMouseMove( event ) {
 
 
 function render() {
+	var delta = clock.getDelta();
+
 	for (var i=0; i<pots.length; i++){
+		if (Math.random()<0.001){
+			console.log(pots);
+		}
+		pots[i].update(delta);
 		pots[i].applyToScene(scene);
 	}
 
-	var delta = clock.getDelta();
 	for(var i = 0; i < worlds.length; i++){
 		posVector.applyAxisAngle(axis, angle);
 	}
@@ -403,7 +521,6 @@ function render() {
 	requestAnimationFrame(render);
 	renderer.render(scene, camera);
 };
-
 
 
 init();
