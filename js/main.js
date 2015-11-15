@@ -12,9 +12,23 @@ var lastColor, lastObj;
 var raycaster, mouse, hover = false;
 var potcolor, soilcolor;
 var planting = false;
+var generatorIndex;
 
 var objects = [];
 var pots = [];
+
+
+$(".Menu-hidden").on('click', function(e){
+    $(".Particle-menu").slideToggle(1000);
+});
+
+$("#songNames li").on('click','a',  function(e){
+    e.preventDefault();
+    var type = $(this).html()
+    type = type.toLowerCase();
+    type += "Generator";
+    generatorIndex = generators.indexOf(type);
+});
 
 var deepcopyArray = function(array){
 	return $.extend(true, [], array);
@@ -448,7 +462,7 @@ var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, 
 var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
 
 
-var generators = [roseGenerator, daffodilGenerator, anemoneGenerator, carnationGenerator, stockGenerator];
+var generators = ["rose" : roseGenerator, "daffodil" : daffodilGenerator, "anemone" : anemoneGenerator, "carnation" : carnationGenerator, "stock" : stockGenerator];
 
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
@@ -479,6 +493,7 @@ function updatePotPos(){
 	}
 }
 
+
 function reset(){
 
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
@@ -494,6 +509,13 @@ function reset(){
 	camControls.noPan = false;
 	camControls.staticMoving = true;
 	camControls.dynamicDampingFactor = 0.3;
+
+	updatePotPos();
+	focus = false;
+	$('.Menu-hidden').hide();
+	if(lastObj != null) lastObj.material.color.setHex(lastColor);
+	focusedPot = null;
+	focusedPotID = null;
 	
 
 }
@@ -504,14 +526,10 @@ function onKeyDown(event){
 		case 32:
 			console.log("space bar pressed");
 			reset();
-			updatePotPos();
-			focus = false;
-			if(lastObj != null) lastObj.material.color.setHex(lastColor);
-			focusedPot = null;
-			focusedPotID = null;
 			break;
 		case 78:
 			console.log("new world created");
+			reset();
 			generatePot();
 			break;
 		case 66:
@@ -543,19 +561,24 @@ function onMouseClick(event){
 		var obj =  hover[0].object.parent;
 		focusedPot = obj;
 		if(!focus){
+			reset();
 			focusPosition = obj.position;
 			camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
 			obj.position.set(0,7,0);
 			focusedPotID = obj.id;
 			console.log(obj.id);
 			focus = true;
+			$('.Menu-hidden').show();
 		}else if(obj.id != focusedPotID){
+			reset();
 			updatePotPos();
 			focusPosition = obj.position;
+			if(lastObj != null) lastObj.material.color.setHex(lastColor);
 			camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
 			obj.position.set(0,7,0);
 			focusedPotID = obj.id;
 			focus = true;
+			$('.Menu-hidden').show();
 		}else if(planting){
 			var voxel = hover[0].object;
 			console.log(focusedPot);
@@ -591,7 +614,6 @@ function getIntersect(){
 
 	for(var i = 0; i < pots.length; i++){
 		intersects = intersects.concat(raycaster.intersectObjects(pots[i].group.children));
-	
 	}
 
 	if(intersects.length > 0){
