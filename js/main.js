@@ -529,7 +529,12 @@ function onKeyDown(event){
 			break;
 		case 78:
 			console.log("new world created");
-			reset();
+			updatePotPos();
+			focus = false;
+			if(lastObj != null) lastObj.material.color.setHex(lastColor);
+			focusedPot = null;
+			focusedPotID = null;
+			$(".Menu-hidden").hide();
 			generatePot();
 			break;
 		case 66:
@@ -561,7 +566,11 @@ function onMouseClick(event){
 			focusedPot = obj;
 			if(!focus){
 				focusPosition = obj.position;
-				camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
+				if(pots.length != 1){
+					camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
+				}else{
+					camera.position.set(15, 15, 15);
+				}
 				obj.position.set(0,7,0);
 				focusedPotID = obj.id;
 				console.log("obj.id",obj.id);
