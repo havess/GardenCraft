@@ -12,7 +12,7 @@ var lastColor, lastObj;
 var raycaster, mouse, hover = false;
 var potcolor, soilcolor;
 var planting = false;
-var generatorIndex;
+var genType = "rose";
 
 var objects = [];
 var pots = [];
@@ -22,12 +22,12 @@ $(".Menu-hidden").on('click', function(e){
     $(".Particle-menu").slideToggle(1000);
 });
 
-$("#songNames li").on('click','a',  function(e){
+$("#Flowers li").on('click','a',  function(e){
     e.preventDefault();
     var type = $(this).html()
     type = type.toLowerCase();
-    type += "Generator";
-    generatorIndex = generators.indexOf(type);
+    console.log(generators[type]);
+
 });
 
 var deepcopyArray = function(array){
@@ -462,7 +462,7 @@ var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, 
 var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
 
 
-var generators = ["rose" : roseGenerator, "daffodil" : daffodilGenerator, "anemone" : anemoneGenerator, "carnation" : carnationGenerator, "stock" : stockGenerator];
+var generators = {"rose" : roseGenerator, "daffodil" : daffodilGenerator, "anemone" : anemoneGenerator, "carnation" : carnationGenerator, "stock" : stockGenerator};
 
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
@@ -586,7 +586,7 @@ function onMouseClick(event){
 				console.log(obj.name);
 				if(obj.name == pots[i].group.name){
 					console.log("PLANTING BITCH" + pots[i].group.name);
-					pots[i].plant(anemoneGenerator, new THREE.Vector3(voxel.position.x, voxel.position.y - 1, voxel.position.z));
+					pots[i].plant(generators[genType], new THREE.Vector3(voxel.position.x, voxel.position.y - 1, voxel.position.z));
 				}
 			}
 		}
