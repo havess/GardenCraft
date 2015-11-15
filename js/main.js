@@ -20,7 +20,7 @@ var getBlockString = function(x, y, z){
 		return [x,y,z].join("|");
 	}
 	else{
-		return [v.x,v.y,v.z].join("|");		
+		return [x.x, x.y, x.z].join("|");		
 	}
 }
 
@@ -82,11 +82,31 @@ Grid.prototype.get = function(x, y, z){
 
 Grid.prototype.set = function(x, y, z, val){
 	//callable as set(x,y,z,val) or set(vector, val)
-	if(val!=undefined){ //first case
+	if(val!==undefined){ //first case
 		this.g[x][y][z] = val;
 	}
 	else{ //vector case is assumed if only one argument is passed
 		this.g[x.x][x.y][x.z]=val;
+	}
+}
+
+Grid.prototype.fill = function(color){
+	for (var i=0; i<this.x; i++){
+		for (var j=0; j<this.y; j++){
+			for (var k=0; k<this.z; k++){
+				this.set(i, j, k, color);
+			}
+		}
+	}
+}
+
+Grid.prototype.mapfill = function(f){
+	for (var i=0; i<this.x; i++){
+		for (var j=0; j<this.y; j++){
+			for (var k=0; k<this.z; k++){
+				this.set(i, j, k, f(i, j, k));
+			}
+		}
 	}
 }
 
@@ -133,7 +153,7 @@ Grid.prototype.applyToScene = function(scene){
 			var x = diff[i][0]; //readability
 			var y = diff[i][1];
 			var z = diff[i][2];
-			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshBasicMaterial() );
+			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
 			cube.position.set((this.x/2)-x-0.5, (this.y/2)-y-0.5, (this.z/2)-z-0.5);
 			cube.material.color.setHex(this.get(x, y, z));
 			cube.name = getBlockName(this.id, diff[i]);
@@ -151,6 +171,28 @@ Grid.prototype.applyToScene = function(scene){
 	}
 
 	scene.oldGrids[this.id] = this.clone()
+}
+
+var attachFlowerPot = function(grid){
+	//does exactly what the name says
+	for (var i=-1; i<grid.x+1; i++) {
+		for (var k=-1; k<grid.z+1; k++) {
+			var j = grid.y;
+			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
+			cube.material.color.setHex(0x996633);
+			cube.position.set((grid.x/2)-i-0.5, (grid.y/2)-j-0.5, (grid.z/2)-k-0.5);
+			cube.name = getBlockName(grid.id, i, j, k);
+			grid.group.add(cube);
+			if (i==-1 || i==grid.x || k==-1 || k==grid.z){
+				var j = grid.y-1;
+				var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
+				cube.material.color.setHex(0x996633);
+				cube.position.set((grid.x/2)-i-0.5, (grid.y/2)-j-0.5, (grid.z/2)-k-0.5);
+				cube.name = getBlockName(grid.id, i, j, k);
+				grid.group.add(cube);
+			}
+		}
+	}
 }
 
 function init(){
@@ -207,7 +249,7 @@ function init(){
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
 	var geometry  = new THREE.SphereGeometry(90, 32, 32);
-	var material  = new THREE.MeshBasicMaterial({color: 0x000000});
+	var material  = new THREE.MeshNormalMaterial();
 	material.side  = THREE.BackSide;
 	var mesh  = new THREE.Mesh(geometry, material);
 	scene.add(mesh);
@@ -245,11 +287,11 @@ function init(){
 
 	var directionalLight = new THREE.DirectionalLight( 0xffffff );
 	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
-	//scene.add( directionalLight );
+	scene.add( directionalLight );
 	scene.oldGrids={};
 
 	//MATERIALS
-	material = new THREE.MeshBasicMaterial( { color: 0x00ff00 });
+	material = new THREE.MeshLambertMaterial( { color: 0x00ff00 });
 
 
 	document.addEventListener( 'keydown', onKeyDown, false );
@@ -278,14 +320,17 @@ function init(){
 }
 
 function generateWorld(){
-	var grid = new Grid(new THREE.Vector3(0,0,0), 2, 2, 2);
-	for (var i=0; i<2; i++){
-		for (var j=0; j<2; j++){
-			grid.set(i, j, 0, 0xff3333);
-			grid.set(i, j, 1, 0x3366ff);
+	var grid = new Grid(new THREE.Vector3(0,0,0), 10, 10, 10);
+
+	grid.mapfill( function(i, j, k){
+		if ((Math.random())<0.1){
+			return 0x33cc33;
 		}
-	}
-	grid.group.position.set(0,0,0);
+		return null;
+	} );
+
+	grid.group.position.set(0, 0, 0);
+	attachFlowerPot(grid);
 	grids.push(grid);
 	updateWorldPos();
 	scene.add(grid.group);
@@ -293,9 +338,9 @@ function generateWorld(){
 }
 
 function updateWorldPos(){
-	var distFromO = (grids.length-1)/2; 
+	var distFromO = 10*(grids.length-1)/2; 
 	var axis = new THREE.Vector3(0,1,0); //z axis
-	var posVector = new THREE.Vector3(distFromO,0,0);
+	var posVector = new THREE.Vector3(distFromO,7,0);
 	var angle = (2*Math.PI)/grids.length;
 	for(var i = 0; i < grids.length; i++){
 		grids[i].group.position.set(posVector.x,posVector.y,posVector.z);
@@ -348,7 +393,7 @@ function onDocumentMouseDown(event){
 function render() {
 	for (var i=0; i<grids.length; i++){
 		grids[i].applyToScene(scene);
-		grids[i].group.rotation.x+=0.01;
+		grids[i].group.rotation.y+=0.01;
 	}
 
 	var delta = clock.getDelta();
