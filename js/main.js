@@ -607,14 +607,13 @@ function onMouseClick(event){
 		if(hover != null){
 			var voxel = hover[0].object;
 			var obj = hover[0].object.parent;
-				if (hover[0].object.parent){
-					for (var i=0; i<pots.length; i++){
-						if (hover[0].object.parent == pots[i].group){
-							pots.splice(i,1);
-							scene.remove(hover[0].object.parent);
-						}
-						updatePotPos();
+			if (hover[0].object.parent){
+				for (var i=0; i<pots.length; i++){
+					if (hover[0].object.parent == pots[i].group){
+						pots.splice(i,1);
+						scene.remove(hover[0].object.parent);
 					}
+					updatePotPos();
 				}
 			}
 			else if (obj.id != focusedPotID){
