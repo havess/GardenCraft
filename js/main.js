@@ -253,27 +253,8 @@ function init(){
 
 
 	document.addEventListener( 'keydown', onKeyDown, false );
+	window.addEventListener( 'mousemove', onMouseMove, false );
 	window.addEventListener( 'resize', onWindowResize, false );
-
-
-	/*var grid = new Grid(new THREE.Vector3(0,0,0), 2, 2, 2);
-	for (var i=0; i<2; i++){
-		for (var j=0; j<2; j++){
-			grid.set(i, j, 0, 0xff3333);
-			grid.set(i, j, 1, 0x3366ff);
-		}
-	}
-
-	grids.push(grid);
-	grids.push(grid.clone());
-	grids.push(grid.clone());
-	grids[0].group.position.set(1, 1, 1)
-	grids[1].group.position.set(3, 3, 3);
-	grids[2].group.position.set(3, 1, 1);
-	
-	scene.add(grids[0].group);
-	scene.add(grids[1].group);
-	scene.add(grids[2].group);*/
 
 }
 
@@ -318,6 +299,12 @@ function onKeyDown(event){
 			console.log("new world created");
 			generateWorld();
 			break;
+		case 66:
+			console.log("removed world");
+			var grid = grids.pop();
+			scene.remove(grid.group);
+			updateWorldPos();
+			break;
 	}
 }
 
@@ -329,19 +316,27 @@ function onWindowResize() {
 	render();
 }
 
-function onDocumentKeyUp(event){
+function onMouseMove( event ) {
 
-}
+	event.preventDefault();
 
-function onDocumentKeyDown(event){
-	//event.preventDefault();
+	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 
+	raycaster.setFromCamera( mouse, camera );
 
-}
+	var intersects = [];
 
-function onDocumentMouseDown(event){
-	//window.addEventListener( 'resize', onWindowResize, false );
-
+	for(var i = 0; i < grids.length; i++){
+		
+			var moreinter = raycaster.intersectObjects(grids[i].group.children);
+			console.log("MORE" + moreinter.length);
+			intersects.concat(moreinter);
+	
+	}
+	console.log(intersects.length);
+	for(var i = 0; i < intersects.length; i++) {
+		intersects[i].object.material.color.setHex(0xffffff);
+	}
 }
 
 
