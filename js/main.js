@@ -9,7 +9,7 @@ var worlds = [];
 var raycaster, mouse;
 
 var objects = [];
-var grids = [];
+var pots = [];
 
 var deepcopyArray = function(array){
 	return $.extend(true, [], array);
@@ -112,7 +112,7 @@ Grid.prototype.mapfill = function(f){
 
 Grid.prototype.diff = function(grid2){
 	if ((this.x!=grid2.x)||(this.y!=grid2.y)||(this.z!=grid2.z)){
-		console.log("GridDelta called with grids that are not the same size.");
+		console.log("GridDelta called with pots that are not the same size.");
 	}
 	// Returns a list of (x,y,z) triplets where this and grid2 differ
 	var ret=[];
@@ -133,16 +133,16 @@ Grid.prototype.applyToScene = function(scene){
 	var oldColor;
 	var newColor;
 
-	if (!scene.oldGrids[this.id]){
-		scene.oldGrids[this.id] = new Grid(this.group.position, this.x, this.y, this.z);
+	if (!scene.oldpots[this.id]){
+		scene.oldpots[this.id] = new Grid(this.group.position, this.x, this.y, this.z);
 	}
 
-	diff = this.diff(scene.oldGrids[this.id]);
+	diff = this.diff(scene.oldpots[this.id]);
 	//console.log("oldgrid", scene.oldGrid);
 	//console.log("grid", this);
 	//console.log("diff:", diff);
 	for (var i=0; i<diff.length; i++){
-		oldColor = Grid.prototype.get.apply(scene.oldGrids[this.id], diff[i]);
+		oldColor = Grid.prototype.get.apply(scene.oldpots[this.id], diff[i]);
 		newColor = Grid.prototype.get.apply(this, diff[i]);
 		//four cases - do nothing, create new cube, delete cube, change color of cube
 		if (oldColor==newColor){ //don't need to do anything, but this should never trigger
@@ -170,30 +170,38 @@ Grid.prototype.applyToScene = function(scene){
 		}
 	}
 
-	scene.oldGrids[this.id] = this.clone()
+	scene.oldpots[this.id] = this.clone()
 }
 
-var attachFlowerPot = function(grid){
-	//does exactly what the name says
-	for (var i=-1; i<grid.x+1; i++) {
-		for (var k=-1; k<grid.z+1; k++) {
-			var j = grid.y;
+var FlowerPot = function(position, x, y, z){
+	Grid.call(this, position, x, y, z);
+
+
+	//now attach the actual flower pot
+	
+	for (var i=-1; i<this.x+1; i++) {
+		for (var k=-1; k<this.z+1; k++) {
+			var j = this.y;
 			var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
 			cube.material.color.setHex(0x996633);
-			cube.position.set((grid.x/2)-i-0.5, (grid.y/2)-j-0.5, (grid.z/2)-k-0.5);
-			cube.name = getBlockName(grid.id, i, j, k);
-			grid.group.add(cube);
-			if (i==-1 || i==grid.x || k==-1 || k==grid.z){
-				var j = grid.y-1;
+			cube.position.set((this.x/2)-i-0.5, (this.y/2)-j-0.5, (this.z/2)-k-0.5);
+			cube.name = getBlockName(this.id, i, j, k);
+			this.group.add(cube);
+			if (i==-1 || i==this.x || k==-1 || k==this.z){
+				var j = this.y-1;
 				var cube = new THREE.Mesh( cubeGeo, new THREE.MeshLambertMaterial() );
 				cube.material.color.setHex(0x996633);
-				cube.position.set((grid.x/2)-i-0.5, (grid.y/2)-j-0.5, (grid.z/2)-k-0.5);
-				cube.name = getBlockName(grid.id, i, j, k);
-				grid.group.add(cube);
+				cube.position.set((this.x/2)-i-0.5, (this.y/2)-j-0.5, (this.z/2)-k-0.5);
+				cube.name = getBlockName(this.id, i, j, k);
+				this.group.add(cube);
 			}
 		}
 	}
+
 }
+
+FlowerPot.prototype = Grid.prototype;
+FlowerPot.prototype.constructor = FlowerPot;
 
 function init(){
 	container = document.createElement('div');
@@ -291,11 +299,10 @@ function init(){
 	var directionalLight = new THREE.DirectionalLight( 0xffffff );
 	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
 	scene.add( directionalLight );
-	scene.oldGrids={};
+	scene.oldpots={};
 
 	//MATERIALS
 	material = new THREE.MeshLambertMaterial( { color: 0x00ff00 });
-
 
 	document.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'mousemove', onMouseMove, false );
@@ -303,31 +310,29 @@ function init(){
 
 }
 
-function generateWorld(){
-	var grid = new Grid(new THREE.Vector3(0,0,0), 10, 10, 10);
+function generatePot(){
+	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 10, 10, 10);
 
-	grid.mapfill( function(i, j, k){
+	pot.mapfill( function(i, j, k){
 		if ((Math.random())<0.1){
 			return 0x33cc33;
 		}
 		return null;
 	} );
 
-	grid.group.position.set(0, 0, 0);
-	attachFlowerPot(grid);
-	grids.push(grid);
-	updateWorldPos();
-	scene.add(grid.group);
-
+	pot.group.position.set(0, 0, 0);
+	pots.push(pot);
+	updatePotPos();
+	scene.add(pot.group);
 }
 
-function updateWorldPos(){
-	var distFromO = 10*(grids.length-1)/2; 
+function updatePotPos(){
+	var distFromO = 10*(pots.length-1)/2; 
 	var axis = new THREE.Vector3(0,1,0); //z axis
 	var posVector = new THREE.Vector3(distFromO,7,0);
-	var angle = (2*Math.PI)/grids.length;
-	for(var i = 0; i < grids.length; i++){
-		grids[i].group.position.set(posVector.x,posVector.y,posVector.z);
+	var angle = (2*Math.PI)/pots.length;
+	for(var i = 0; i < pots.length; i++){
+		pots[i].group.position.set(posVector.x,posVector.y,posVector.z);
 		posVector.applyAxisAngle(axis, angle);
 	}
 }
@@ -345,19 +350,18 @@ function onKeyDown(event){
 			break;
 		case 78:
 			console.log("new world created");
-			generateWorld();
+			generatePot();
 			break;
 		case 66:
 			console.log("removed world");
-			var grid = grids.pop();
-			scene.remove(grid.group);
-			updateWorldPos();
+			var pot = pots.pop();
+			scene.remove(pot.group);
+			updatePotPos();
 			break;
 	}
 }
 
 function onWindowResize() {
-
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -374,8 +378,8 @@ function onMouseMove( event ) {
 
 	var intersects = [];
 
-	for(var i = 0; i < grids.length; i++){
-		intersects = intersects.concat(raycaster.intersectObjects(grids[i].group.children));
+	for(var i = 0; i < pots.length; i++){
+		intersects = intersects.concat(raycaster.intersectObjects(pots[i].group.children));
 	
 	}
 
@@ -386,8 +390,8 @@ function onMouseMove( event ) {
 
 
 function render() {
-	for (var i=0; i<grids.length; i++){
-		grids[i].applyToScene(scene);
+	for (var i=0; i<pots.length; i++){
+		pots[i].applyToScene(scene);
 	}
 
 	var delta = clock.getDelta();
