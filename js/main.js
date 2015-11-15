@@ -206,7 +206,11 @@ Grid.prototype.applyToScene = function(scene){
 
 		else if (newColor===null){
 			var tmp = this.group.getObjectByName(getBlockName(this.id, diff[i]));
+			console.log("removing", tmp);
+			console.log("children before", this.group.children.length);
 			this.group.remove(tmp);
+			scene.remove(tmp);
+			console.log("children after", this.group.children.length);
 		}
 
 		else{
@@ -277,19 +281,19 @@ FlowerPot.prototype.plant = function(florafunc, startpos){
 }
 
 FlowerPot.prototype.update = function(dt){
-	//console.log("FlowerPot.update called");
 	for (var i=0; i<this.flora.length; i++){
 		this.flora[i].update(dt);
 	}
 }
 
 FlowerPot.prototype.remove = function(index){
-	console.log("get the fuck out - removing flower")
+	console.log("get out please - removing flower")
 	//removes the flora, and all blocks of the flower, at that index in flora
 	for (var i=0; i<this.x; i++){
 		for (var j=0; j<this.y; j++){
 			for (var k=0; k<this.z; k++){
 				if (this.flora[index].get(i, j, k)){
+					console.log("attempting to remove", getBlockName(this.id, i, j, k));
 					this.set(i, j, k, null);
 				}
 			}
@@ -384,7 +388,7 @@ function init(){
 
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
-	var geometry  = new THREE.SphereGeometry(90, 32, 32);
+	var geometry  = new THREE.SphereGeometry(100000, 32, 32);
 	
 	//var material  = new THREE.MeshNormalMaterial(); //rainbow mode
 	var material  = new THREE.MeshBasicMaterial({color: 0x000000});
@@ -496,7 +500,7 @@ function updatePotPos(){
 
 function reset(){
 
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10000 );
+	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 9999999 );
 	camera.position.set(15,15,15);
 	console.log(camera.rotation);
 	console.log(camera.quaternion);
@@ -627,11 +631,9 @@ function onMouseClick(event){
 }
 
 function onMouseMove( event ) {
-
 	event.preventDefault();
 	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
-	console.log("hover:",hover);
-	if(focus && hover != null && hover[0].object.parent.id == focusedPotID && hover[0].object.geometry.name == "soil"){
+	if(focus && hover != null && hover[0].object.parent && hover[0].object.parent.id == focusedPotID && hover[0].object.geometry.name == "soil"){
 		if(lastObj != null) lastObj.material.color.setHex(lastColor);
 		lastObj = hover[0].object;
 		lastColor = hover[0].object.material.color.getHex();
