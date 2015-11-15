@@ -42,7 +42,7 @@ var getBlockString = function(x, y, z){
 
 	}
 	else{
-		console.log("b", [x, y, z].join("|"))
+		//console.log("b", [x, y, z].join("|"))
 		return [x, y, z].join("|");
 	}
 }
@@ -206,11 +206,11 @@ Grid.prototype.applyToScene = function(scene){
 
 		else if (newColor===null){
 			var tmp = this.group.getObjectByName(getBlockName(this.id, diff[i]));
-			console.log("removing", tmp);
-			console.log("children before", this.group.children.length);
+			//console.log("removing", tmp);
+			//console.log("children before", this.group.children.length);
 			this.group.remove(tmp);
 			scene.remove(tmp);
-			console.log("children after", this.group.children.length);
+			//console.log("children after", this.group.children.length);
 		}
 
 		else{
@@ -287,13 +287,13 @@ FlowerPot.prototype.update = function(dt){
 }
 
 FlowerPot.prototype.remove = function(index){
-	console.log("get out please - removing flower")
+	//console.log("get out please - removing flower")
 	//removes the flora, and all blocks of the flower, at that index in flora
 	for (var i=0; i<this.x; i++){
 		for (var j=0; j<this.y; j++){
 			for (var k=0; k<this.z; k++){
 				if (this.flora[index].get(i, j, k)){
-					console.log("attempting to remove", getBlockName(this.id, i, j, k));
+					//console.log("attempting to remove", getBlockName(this.id, i, j, k));
 					this.set(i, j, k, null);
 				}
 			}
@@ -325,7 +325,7 @@ Flora.prototype.growTo = function(x, y, z, color){
 		this.pot.set(x, y, z, color);
 		return 1;
 	}
-	console.log("requested but unavailable:", x, y, z);
+	//console.log("requested but unavailable:", x, y, z);
 	return 0;
 }
 
@@ -502,8 +502,8 @@ function reset(){
 
 	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 9999999 );
 	camera.position.set(15,15,15);
-	console.log(camera.rotation);
-	console.log(camera.quaternion);
+	//console.log(camera.rotation);
+	//console.log(camera.quaternion);
 
 	camControls = new THREE.TrackballControls( camera );
 	camControls.rotateSpeed = 10.0;
@@ -532,7 +532,7 @@ function onKeyDown(event){
 			reset();
 			break;
 		case 78:
-			console.log("new world created");
+			console.log("new flower jar created");
 			updatePotPos();
 			focus = false;
 			if(lastObj != null) lastObj.material.color.setHex(lastColor);
@@ -548,7 +548,7 @@ function onKeyDown(event){
 			updatePotPos();
 			break;
 		case 90:
-			console.log(camera.position);
+			//console.log(camera.position);
 			camera.position.addScaledVector(camera.position, -0.5);
 			break;
 	}
@@ -577,7 +577,7 @@ function onMouseClick(event){
 				}
 				obj.position.set(0,7,0);
 				focusedPotID = obj.id;
-				console.log("obj.id",obj.id);
+//				console.log("obj.id",obj.id);
 				$(".Menu-hidden").show();
 				focus = true;
 			}else if(obj.id != focusedPotID){
@@ -589,22 +589,21 @@ function onMouseClick(event){
 				focus = true;
 			}else if(planting){
 				var voxel = hover[0].object;
-				console.log("focusedPot",focusedPot);
+//				console.log("focusedPot",focusedPot);
 				for(var i = 0; i < pots.length; i++){
-					console.log("obj.name", obj.name);
+//					console.log("obj.name", obj.name);
 					if(obj.name == pots[i].group.name){
-						console.log("PLANTING BITCH" + pots[i].group.name);
-						console.log("voxel name split", voxel.name, new THREE.Vector3(voxel.truePosition));
+//						console.log("voxel name split", voxel.name, new THREE.Vector3(voxel.truePosition));
 						pots[i].plant(generators[genType], new THREE.Vector3(voxel.truePosition[0], voxel.truePosition[1]+1, voxel.truePosition[2]));
 						//pots[i].plant(anemoneGenerator, new THREE.Vector3(10, pots[i].y-1, 3));
-						console.log("flora.length", pots[i].flora.length);
+//						console.log("flora.length", pots[i].flora.length);
 					}
 				}
 			}
 		}
 	}
 	else if (event.button === 1){
-		console.log("DIFFERENT MOUSE CLICK YOO 1");
+//		console.log("DIFFERENT MOUSE CLICK YOO 1");
 		if(hover != null){
 			var voxel = hover[0].object;
 			var obj = hover[0].object.parent;
@@ -669,7 +668,7 @@ function render() {
 
 	for (var i=0; i < pots.length; i++){
 		
-		if(hover != null && hover[0].object.parent.id != focusedPotID) hover[0].object.parent.rotation.y += 0.009;
+		if(hover != null && hover[0].object.parent && hover[0].object.parent.id != focusedPotID) hover[0].object.parent.rotation.y += 0.009;
 		pots[i].update(delta);
 		pots[i].applyToScene(scene); 
 	}
