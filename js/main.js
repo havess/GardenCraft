@@ -11,7 +11,7 @@ var focus = false, focusedPot, focusedPotID, focusPosition, posVector;
 var lastColor, lastObj;
 var raycaster, mouse, hover = false;
 var potcolor, soilcolor;
-
+var planting = false;
 
 var objects = [];
 var pots = [];
@@ -259,7 +259,6 @@ FlowerPot.prototype.plant = function(florafunc, startpos){
 	var newFlora = new Flora(this, florafunc);
 	newFlora.startpos = startpos;
 	newFlora.pot = this;
-	newFlora.updatefunc = florafunc;
 	this.flora.push(newFlora);
 }
 
@@ -410,7 +409,7 @@ var flowerGeneratorGenerator = function(_colorLiving, _colorPetals, _colorCenter
 		var colorPetals = _colorPetals;
 		var colorCenter = _colorCenter;
 
-		if (self._clock===undefined){ //if first time running
+		if (self._clock === undefined){ //if first time running
 			self._clock=0;
 			self._headpos = self.startpos;//current coordinates of rose head
 			self.growTo(self._headpos.x, self._headpos.y, self._headpos.z, colorLiving);
@@ -447,6 +446,7 @@ var daffodilGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xf4f53d, 0xffcc00, [
 var anemoneGenerator = flowerGeneratorGenerator(0x267326, 0xf0e5ff, 0x6600ff, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1]], 6) //greenish=yellow, really light purple, purple
 var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, [[-1, -2, 0],[1, -2, 0],[0, -2, -1],[0, -2, 1],[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1],[0, -1, 0]], 6) //greenish=yellow, really light purple, purple
 var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
+
 
 var generators = [roseGenerator, daffodilGenerator, anemoneGenerator, carnationGenerator, stockGenerator];
 
@@ -506,6 +506,9 @@ function onKeyDown(event){
 			reset();
 			updatePotPos();
 			focus = false;
+			if(lastObj != null) lastObj.material.color.setHex(lastColor);
+			focusedPot = null;
+			focusedPotID = null;
 			break;
 		case 78:
 			console.log("new world created");
@@ -553,6 +556,16 @@ function onMouseClick(event){
 			obj.position.set(0,7,0);
 			focusedPotID = obj.id;
 			focus = true;
+		}else if(planting){
+			var voxel = hover[0].object;
+			console.log(focusedPot);
+			for(var i = 0; i < pots.length; i++){
+				console.log(obj.name);
+				if(obj.name == pots[i].group.name){
+					console.log("PLANTING BITCH" + pots[i].group.name);
+					pots[i].plant(anemoneGenerator, new THREE.Vector3(voxel.position.x, voxel.position.y - 1, voxel.position.z));
+				}
+			}
 		}
 	}
 }
@@ -566,6 +579,7 @@ function onMouseMove( event ) {
 		lastObj = hover[0].object;
 		lastColor = hover[0].object.material.color.getHex();
 		hover[0].object.material.color.setHex(0x00ff00);
+		planting = true;
 	}
 }
 
@@ -593,10 +607,11 @@ function render() {
 
 	var delta = clock.getDelta();
 
-	for (var i=0; i<pots.length; i++){
+	for (var i=0; i < pots.length; i++){
+		
+		if(hover != null && hover[0].object.parent.id != focusedPotID) hover[0].object.parent.rotation.y += 0.009;
 		pots[i].update(delta);
-		pots[i].applyToScene(scene);
-		if(hover != null && hover[0].object.parent.id != focusedPotID) hover[0].object.parent.rotation.y += 0.009; 
+		pots[i].applyToScene(scene); 
 	}
 
 	for(var i = 0; i < worlds.length; i++){
