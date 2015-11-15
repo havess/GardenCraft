@@ -8,6 +8,7 @@ var plane, cube, sphere;
 var iniQ, endQ, curQ, vec3, tweenValue;
 var worlds = [];
 var focus = false, focusedPot, focusedPotID, focusPosition, posVector;
+var lastColor, lastObj;
 var raycaster, mouse, hover = false;
 
 
@@ -344,7 +345,6 @@ function init(){
 
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
-	scene.add(textMesh1);
 
 	var geometry  = new THREE.SphereGeometry(90, 32, 32);
 	
@@ -536,6 +536,13 @@ function onMouseMove( event ) {
 
 	event.preventDefault();
 	mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+	if(focus && hover != null && hover[0].object.parent.id == focusedPotID){
+		if(lastObj != null) lastObj.material.color.setHex(lastColor);
+		console.log(hover[0]);
+		lastObj = hover[0].object;
+		lastColor = hover[0].object.material.color.getHex();
+		hover[0].object.material.color.setHex(0x00ff00);
+	}
 }
 
 function getIntersect(){
@@ -568,7 +575,7 @@ function render() {
 	for (var i=0; i<pots.length; i++){
 		pots[i].update(delta);
 		pots[i].applyToScene(scene);
-		if(hover != null) hover[0].object.parent.rotation.y += 0.009; 
+		if(hover != null && hover[0].object.parent.id != focusedPotID) hover[0].object.parent.rotation.y += 0.009; 
 	}
 
 	for(var i = 0; i < worlds.length; i++){
