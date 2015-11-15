@@ -607,16 +607,17 @@ function onMouseClick(event){
 		if(hover != null){
 			var voxel = hover[0].object;
 			var obj = hover[0].object.parent;
-			if (hover[0].object.parent){
-				for (var i=0; i<pots.length; i++){
-					if (hover[0].object.parent == pots[i].group){
-						pots.splice(i,1);
-						scene.remove(hover[0].object.parent);
+
+			if (obj.id != focusedPotID){
+				if (hover[0].object.parent){
+					for (var i=0; i<pots.length; i++){
+						if (hover[0].object.parent == pots[i].group){
+							pots.splice(i,1);
+							scene.remove(hover[0].object.parent);
+						}
+						updatePotPos();
 					}
-					updatePotPos();
 				}
-			}
-			else if (obj.id != focusedPotID){
 			}
 			else{
 				for (var i=0; i<pots.length; i++){
@@ -627,7 +628,7 @@ function onMouseClick(event){
 								hover = getIntersect();
 								return;
 							}
-						}	
+						}
 					}
 				}
 			}
@@ -676,7 +677,7 @@ function render() {
 		
 		if(hover != null && hover[0].object.parent && hover[0].object.parent.id != focusedPotID) hover[0].object.parent.rotation.y += 0.009;
 		pots[i].update(delta);
-		pots[i].applyToScene(scene); 
+		pots[i].applyToScene(scene);
 	}
 
 	for(var i = 0; i < worlds.length; i++){
