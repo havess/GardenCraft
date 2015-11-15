@@ -202,37 +202,39 @@ var FlowerPot = function(position, x, y, z){
 
 	this.flora = [];
 
+	var allowance = 3 //non-pot grid space to leave on each side for flowers to grow into
+
 	var potcolor = 0x996633;
 	var soilcolor = 0x5f4020;
 
-	var soilGeo = new THREE.BoxGeometry(this.x,1,this.z);
+	var soilGeo = new THREE.BoxGeometry(this.x-2*allowance, 1, this.z-2*allowance);
 	var soil = new THREE.Mesh(soilGeo, new THREE.MeshLambertMaterial({color: soilcolor}))
 	soil.position.set(0, -this.y/2 -0.5, 0);
 	this.group.add(soil);
 
-	var potGeo = new THREE.BoxGeometry(this.x,1,this.z);
+	var potGeo = new THREE.BoxGeometry(this.x-2*allowance, 1, this.z-2*allowance);
 	var potmesh = new THREE.Mesh(potGeo, new THREE.MeshLambertMaterial({color: potcolor}))
 	potmesh.position.set(0, -this.y/2 -2.5, 0);
 	this.group.add(potmesh);
 
-	var sideGeo = new THREE.BoxGeometry(this.x+2,3,1);
+	var sideGeo = new THREE.BoxGeometry(this.x+2- 2*allowance,3,1);
 	var sidemesh = new THREE.Mesh(sideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
-	sidemesh.position.set(0, -this.y/2-0.5, this.z/2+0.5);
+	sidemesh.position.set(0, -this.y/2-0.5, (this.z-2*allowance)/2+0.5);
 	this.group.add(sidemesh);
 
-	var sideGeo = new THREE.BoxGeometry(this.x+2,3,1);
+	var sideGeo = new THREE.BoxGeometry(this.x+2- 2*allowance,3,1);
 	var sidemesh = new THREE.Mesh(sideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
-	sidemesh.position.set(0, -this.y/2-0.5, -this.z/2 - 0.5);
+	sidemesh.position.set(0, -this.y/2-0.5, -(this.z-2*allowance)/2 - 0.5);
 	this.group.add(sidemesh);
 
-	var othersideGeo = new THREE.BoxGeometry(1,3,this.z + 2);
+	var othersideGeo = new THREE.BoxGeometry(1,3,this.z + 2 - 2*allowance);
 	var othersidemesh = new THREE.Mesh(othersideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
-	othersidemesh.position.set(-this.z/2 - 0.5, -this.y/2-0.5, 0);
+	othersidemesh.position.set(-(this.z-2*allowance)/2 - 0.5, -this.y/2-0.5, 0);
 	this.group.add(othersidemesh);
 
-	var othersideGeo = new THREE.BoxGeometry(1,3,this.z + 2);
+	var othersideGeo = new THREE.BoxGeometry(1,3,this.z + 2 - 2*allowance);
 	var othersidemesh = new THREE.Mesh(othersideGeo, new THREE.MeshLambertMaterial({color: potcolor}))
-	othersidemesh.position.set(this.z/2 + 0.5, -this.y/2-0.5, 0);
+	othersidemesh.position.set((this.z- 2*allowance)/2 + 0.5, -this.y/2-0.5, 0);
 	this.group.add(othersidemesh);
 }
 
@@ -248,7 +250,7 @@ FlowerPot.prototype.plant = function(florafunc, startpos){
 }
 
 FlowerPot.prototype.update = function(dt){
-	console.log("FlowerPot.update called");
+	//console.log("FlowerPot.update called");
 	for (var i=0; i<this.flora.length; i++){
 		this.flora[i].update(dt);
 	}
@@ -386,7 +388,7 @@ var flowerGeneratorGenerator = function(_colorLiving, _colorPetals, _colorCenter
 			this.height=1;
 		}
 
-		if (Math.random()<0.2){ //grow
+		if (Math.random()<0.15){ //grow
 			if (this.height==maxheight || Math.random()<0.1){
 				self.growTo(self._headpos.x, self._headpos.y-1, self._headpos.z, colorCenter);
 				for (var i=0; i<petals.length; i++){
@@ -398,7 +400,7 @@ var flowerGeneratorGenerator = function(_colorLiving, _colorPetals, _colorCenter
 			else{
 				var nx = [-1,0,0,0,0,0,1][randrange(0,6)];
 				var nz = [-1,0,0,0,0,0,1][randrange(0,6)];
-				console.log('headpos',self._headpos);
+				//console.log('headpos',self._headpos);
 				if (self.growTo(self._headpos.x+nx, self._headpos.y-1, self._headpos.z+nz, colorLiving)){
 					self._headpos.add(new THREE.Vector3(nx, -1, nz));
 					this.height++;
@@ -408,15 +410,21 @@ var flowerGeneratorGenerator = function(_colorLiving, _colorPetals, _colorCenter
 	}
 }
 
+
+
 var roseGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xff3333, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
 var daffodilGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xf4f53d, 0xffcc00, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1]], 6) //green, red, yellow
 var anemoneGenerator = flowerGeneratorGenerator(0x267326, 0xf0e5ff, 0x6600ff, [[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1]], 6) //greenish=yellow, really light purple, purple
+var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, [[-1, -2, 0],[1, -2, 0],[0, -2, -1],[0, -2, 1],[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1],[0, -1, 0]], 6) //greenish=yellow, really light purple, purple
+var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
+
+generators = [roseGenerator, daffodilGenerator, anemoneGenerator, carnationGenerator, stockGenerator];
 
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
-	pot.plant(daffodilGenerator, new THREE.Vector3(0,pot.y-1,0));
-	pot.plant(roseGenerator, new THREE.Vector3(0,pot.y-1,2));
-	pot.plant(anemoneGenerator, new THREE.Vector3(0,pot.y-1,13));
+	pot.plant(daffodilGenerator, new THREE.Vector3(3, pot.y-1, 3));
+	pot.plant(stockGenerator, new THREE.Vector3(10, pot.y-1, 3));
+	pot.plant(carnationGenerator, new THREE.Vector3(3, pot.y-1, 10));
 	/*pot.mapfill( function(i, j, k){
 		if ((Math.random())<0.1){
 			return 0x33cc33;
@@ -497,9 +505,6 @@ function render() {
 	var delta = clock.getDelta();
 
 	for (var i=0; i<pots.length; i++){
-		if (Math.random()<0.001){
-			console.log(pots);
-		}
 		pots[i].update(delta);
 		pots[i].applyToScene(scene);
 	}
