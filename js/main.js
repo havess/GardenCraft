@@ -21,11 +21,16 @@ var deepcopyArray = function(array){
 }
 
 var getBlockString = function(x, y, z){
-	if (y === undefined){
-		return [x,y,z].join("|");
+	if (y === undefined || z === undefined){
+		if (x.x === undefined){
+			return [x[0],x[1],x[2]].join("|");
+		}
+		return [x.x, x.y, x.z].join("|");
+
 	}
 	else{
-		return [x.x, x.y, x.z].join("|");		
+		console.log("b", [x, y, z].join("|"))
+		return [x, y, z].join("|");
 	}
 }
 
@@ -91,9 +96,6 @@ Grid.prototype.get = function(x, y, z){
 		return this.g[x][y][z];
 	}
 	else{ //vector case is assumed if only one argument is passed
-		console.log("this.g is", this.g);
-		console.log("x is", x);
-		console.log();
 		return this.g[x.x][x.y][x.z];
 	}
 }
@@ -104,7 +106,6 @@ Grid.prototype.set = function(x, y, z, val){
 		this.g[x][y][z] = val;
 	}
 	else{ //vector case is assumed if only one argument is passed
-		console.log(x);
 		this.g[x.x][x.y][x.z]=val;
 	}
 }
@@ -190,7 +191,8 @@ Grid.prototype.applyToScene = function(scene){
 		}
 
 		else if (newColor===null){
-			scene.remove(getBlockName(this.id, diff[i]));
+			var tmp = this.group.getObjectByName(getBlockName(this.id, diff[i]));
+			this.group.remove(tmp);
 		}
 
 		else{
@@ -269,7 +271,7 @@ FlowerPot.prototype.update = function(dt){
 }
 
 FlowerPot.prototype.remove = function(index){
-	console.log("get the fuck out")
+	console.log("get the fuck out - removing flower")
 	//removes the flora, and all blocks of the flower, at that index in flora
 	for (var i=0; i<this.x; i++){
 		for (var j=0; j<this.y; j++){
