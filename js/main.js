@@ -7,7 +7,9 @@ var planeGeo, cubeGeo, sphereGeo;
 var plane, cube, sphere;
 var iniQ, endQ, curQ, vec3, tweenValue;
 var worlds = [];
+var focus = false, focusedPot, focusedPotID, focusPosition, posVector;
 var raycaster, mouse, hover = false;
+
 
 var objects = [];
 var pots = [];
@@ -342,6 +344,8 @@ function init(){
 
 	cubeGeo = new THREE.BoxGeometry(1,1,1);
 
+	scene.add(textMesh1);
+
 	var geometry  = new THREE.SphereGeometry(90, 32, 32);
 	
 	//var material  = new THREE.MeshNormalMaterial(); //rainbow mode
@@ -420,7 +424,7 @@ var anemoneGenerator = flowerGeneratorGenerator(0x267326, 0xf0e5ff, 0x6600ff, [[
 var carnationGenerator = flowerGeneratorGenerator(0x267326, 0xff99cc, 0xff99cc, [[-1, -2, 0],[1, -2, 0],[0, -2, -1],[0, -2, 1],[-1, 0, 0],[1, 0, 0],[0, 0, -1],[0, 0, 1],[-1, -1, -1],[1, -1, 1],[1, -1, -1],[-1, -1, 1],[0, -1, 0]], 6) //greenish=yellow, really light purple, purple
 var stockGenerator = flowerGeneratorGenerator(0x1f7a1f, 0xcc99ff, 0xcc99ff, [[-1, 0, 0],[0, -1, 0],[0, -2, 0],[1,-2,0],[1,-3,0]], 4) //green, red, yellow
 
-generators = [roseGenerator, daffodilGenerator, anemoneGenerator, carnationGenerator, stockGenerator];
+var generators = [roseGenerator, daffodilGenerator, anemoneGenerator, carnationGenerator, stockGenerator];
 
 function generatePot(){
 	var pot = new FlowerPot(new THREE.Vector3(0,0,0), 14, 14, 14);
@@ -443,7 +447,7 @@ function generatePot(){
 function updatePotPos(){
 	var distFromO = 10*(pots.length-1)/2; 
 	var axis = new THREE.Vector3(0,1,0); //z axis
-	var posVector = new THREE.Vector3(distFromO,7,0);
+	posVector = new THREE.Vector3(distFromO,7,0);
 	var angle = (2*Math.PI)/pots.length;
 	for(var i = 0; i < pots.length; i++){
 		pots[i].group.position.set(posVector.x,posVector.y,posVector.z);
@@ -476,6 +480,8 @@ function onKeyDown(event){
 		case 32:
 			console.log("space bar pressed");
 			reset();
+			updatePotPos();
+			focus = false;
 			break;
 		case 78:
 			console.log("new world created");
@@ -505,16 +511,24 @@ function onWindowResize() {
 function onMouseClick(event){
 
 	event.preventDefault();
-
 	if(hover != null){
-		//reset();
-		var targetPos = hover[0].object.parent.position;
-		smoothAsFuck(targetPos, 5);
-		//camControls.target = targetPos;
-		//camera.position.set(0,4,0);
-		requestAnimationFrame(render);
-		//potZoom(targetPos, 100, 1000);
-		//tweenRotation(targetQ, 10);
+		var obj =  hover[0].object.parent;
+		focusedPot = obj;
+		if(!focus){
+			focusPosition = obj.position;
+			camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
+			obj.position.set(0,7,0);
+			focusedPotID = obj.id;
+			console.log(obj.id);
+			focus = true;
+		}else if(obj.id != focusedPotID){
+			updatePotPos();
+			focusPosition = obj.position;
+			camera.position.set(focusPosition.x, focusPosition.y, focusPosition.z);
+			obj.position.set(0,7,0);
+			focusedPotID = obj.id;
+			focus = true;
+		}
 	}
 }
 
@@ -536,7 +550,6 @@ function getIntersect(){
 	}
 
 	if(intersects.length > 0){
-		intersects[0].object.parent.rotation.y += 0.05;
 		return intersects;
 	}else{
 		return null;
@@ -546,17 +559,21 @@ function getIntersect(){
 
 function render() {
 
+
+
+	hover = getIntersect();
+
 	var delta = clock.getDelta();
 
 	for (var i=0; i<pots.length; i++){
 		pots[i].update(delta);
 		pots[i].applyToScene(scene);
+		if(hover != null) hover[0].object.parent.rotation.y += 0.009; 
 	}
 
 	for(var i = 0; i < worlds.length; i++){
 		posVector.applyAxisAngle(axis, angle);
 	}
-	
 	camControls.update();
 	renderer.clear();
 	requestAnimationFrame(render);
